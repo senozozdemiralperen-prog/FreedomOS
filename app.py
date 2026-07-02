@@ -8,21 +8,16 @@ from sklearn.linear_model import LinearRegression
 # Sayfa Genişlik ve Tema Ayarı
 st.set_page_config(page_title="FreedomOS - Kalıcı Varlık ve Özgürlük Yönetimi", layout="wide", page_icon="💼")
 
-# --- BULUT VERİ TABANI (GOOGLE SHEETS) BAĞLANTISI ---
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BIYr-AaryZp7cisYJZP6lilqdNfaBezcGIAJUkJLf80/edit?usp=sharing"
+# --- BULUT VERİ TABANI (GOOGLE SHEETS) BAĞLANTISI (ALTERNATİF KESİN YÖNTEM) ---
+# E-tablonuzun CSV indirme linkleri
+GIDERLER_URL = "https://docs.google.com/spreadsheets/d/1BIYr-AaryZp7cisYJZP6lilqdNfaBezcGIAJUkJLf80/export?format=csv&gid=0" 
+VARLIKLAR_URL = "https://docs.google.com/spreadsheets/d/1BIYr-AaryZp7cisYJZP6lilqdNfaBezcGIAJUkJLf80/export?format=csv&gid=1111111" # Gid değerini Sheets sayfanızın URL'sinden kontrol edin
 
-# Bağlantı motorunu 'gsheets' tipiyle kararlı hale getiriyoruz
-try:
-    conn = st.connection("gsheets", type="gsheets")
-except Exception as e:
-    st.error(f"Bağlantı motoru başlatılamadı: {e}. Lütfen requirements.txt dosyanıza 'st-gsheets-connection' eklediğinizden emin olun.")
-
-# Veritabanından okuma fonksiyonları
-def load_data(sheet_name):
+def load_data(url, sheet_name):
     try:
-        return conn.read(spreadsheet=GOOGLE_SHEET_URL, worksheet=sheet_name, ttl="0m")
+        # Doğrudan Pandas ile internet üzerinden CSV olarak okuyoruz, ekstra kütüphane gerekmez!
+        return pd.read_csv(url)
     except Exception as e:
-        # Eğer tablolar boşsa veya henüz oluşmadıysa şablon DataFrame'ler döner
         if sheet_name == "Giderler":
             return pd.DataFrame(columns=[
                 "Dönem/Ay", "Net Gelir", "Kira/Mutfak", "Faturalar", "Kredi/Borç", 
@@ -33,9 +28,9 @@ def load_data(sheet_name):
                 "Dönem/Ay", "Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia", "Toplam Varlık"
             ])
 
-# Verileri canlı Sheets üzerinden session_state'e çekiyoruz
-st.session_state.income_expense_history = load_data("Giderler")
-st.session_state.investment_history = load_data("Varlıklar")
+# Otomatik yükleme alanları
+st.session_state.income_expense_history = load_data(GIDERLER_URL, "Giderler")
+st.session_state.investment_history = load_data(VARLIKLAR_URL, "Varlıklar")
 
 # --- SOL PANEL: SAYFA SEÇİCİ NAVİGASYON ---
 st.sidebar.title("💼 FreedomOS v3.0")
