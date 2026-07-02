@@ -109,7 +109,7 @@ page = st.sidebar.radio(
     "Gitmek İstediğiniz Sayfa:",
     [
         "🏠 Genel Durum & Özet Paneli", 
-        "📊 Gelir / Gider Detaylı Kaydı", 
+        "📊 Gelir /  Detaylı Gider Kaydı", 
         "💎 Detaylı Mal Varlığı Envanteri",
         "📈 Varlık & Portföy Rebalancing", 
         "🔮 Maaşlı Çalışmadan Kurtulma Motoru"
