@@ -9,19 +9,15 @@ from sklearn.linear_model import LinearRegression
 st.set_page_config(page_title="WealthOS - Kalıcı Varlık Yönetim Sistemi", layout="wide", page_icon="💼")
 
 # --- BULUT VERİ TABANI (GOOGLE SHEETS) BAĞLANTISI ---
-try:
-    # Doğru bağlantı kütüphane çağrısı yapılıyor
-    conn = st.connection("gsheets", type="sheets")
-except Exception as e:
-    st.error("⚠️ Google Sheets Secrets ayarı henüz yapılmamış veya hatalı! Lütfen Streamlit Settings > Secrets alanını kontrol edin.")
+# Buraya kendi Google Sheets linkinizi doğrudan yapıştırın (Sonunun /edit olduğundan emin olun)
+GOOGLE_SHEET_URL = "https://google.com_GOOGLE_SHEETS_LİNKİNİZİ_YAPIŞTIRIN/edit"
 
 # Veritabanından okuma fonksiyonları
 def load_data(sheet_name):
     try:
-        # Google Sheet üzerindeki ilgili sekmeyi okur
-        return conn.read(worksheet=sheet_name, ttl="0m")
+        # Doğrudan link üzerinden ve şifreye ihtiyaç duymadan okuma tetiklenir
+        return st.connection("gsheets", type="sheets").read(spreadsheet=GOOGLE_SHEET_URL, worksheet=sheet_name, ttl="0m")
     except Exception as e:
-        # Eğer tablo boşsa veya hata verirse şablon döndürür
         if sheet_name == "Giderler":
             return pd.DataFrame(columns=[
                 "Dönem/Ay", "Net Gelir", "Kira/Mutfak", "Faturalar", "Kredi/Borç", 
@@ -32,9 +28,10 @@ def load_data(sheet_name):
                 "Dönem/Ay", "Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia", "Toplam Varlık"
             ])
 
-# Hafıza alanlarını doğrudan canlı Google E-Tabloya bağlıyoruz
+# Hafıza alanlarını doğrudan canlı linke bağlıyoruz
 st.session_state.income_expense_history = load_data("Giderler")
 st.session_state.investment_history = load_data("Varlıklar")
+
 
 # --- SOL PANEL: SAYFA SEÇİCİ NAVİGASYON ---
 st.sidebar.title("💼 WealthOS v3.0 (Canlı Veri)")
