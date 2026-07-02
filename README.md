@@ -1,0 +1,2 @@
+# FreedomOS
+Varlık yönetimi
