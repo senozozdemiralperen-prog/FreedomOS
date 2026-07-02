@@ -95,7 +95,7 @@ live_market, sp500_hist_data = get_live_prices_and_sp500()
 
 # --- SOL PANEL ---
 st.sidebar.title("👑 FreedomOS v6.0")
-st.sidebar.markdown("*Mark Tilbury Pro Yönetim Sistemi*")
+st.sidebar.markdown("*Alpi Pro Yönetim Sistemi*")
 st.sidebar.divider()
 
 st.sidebar.subheader("🌍 Canlı Piyasa Takibi")
