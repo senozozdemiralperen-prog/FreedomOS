@@ -109,7 +109,7 @@ page = st.sidebar.radio(
     "Gitmek İstediğiniz Sayfa:",
     [
         "🏠 Genel Durum & Özet Paneli", 
-        "📊 Gelir /   Detaylı Gider Kaydı", 
+        "📊 Gelir / Gider Detaylı Kaydı", 
         "💎 Detaylı Mal Varlığı Envanteri",
         "📈 Varlık & Portföy Rebalancing", 
         "🔮 Maaşlı Çalışmadan Kurtulma Motoru"
@@ -164,8 +164,8 @@ if page == "🏠 Genel Durum & Özet Paneli":
             varlik_values = [float(last_varlik[l]) for l in varlik_labels]
             st.plotly_chart(px.pie(names=varlik_labels, values=varlik_values, hole=0.4, color_discrete_sequence=px.colors.sequential.Mint), use_container_width=True)
 
-# --- SAYFA 2: GELİR / DETAYLI GİDER KAYDI ---
-elif page == "📊 Gelir / Detaylı Gider Kaydı":
+# --- SAYFA 2: GELİR / GİDER DETAYLI KAYDI ---
+elif page == "📊 Gelir / Gider Detaylı Kaydı":
     st.header("📊 Detaylı Gelir ve Gider Kayıt Defteri")
     
     with st.form("gider_formu", clear_on_submit=True):
