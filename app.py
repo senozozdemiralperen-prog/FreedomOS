@@ -60,7 +60,7 @@ live_market = get_live_prices()
 
 # --- SOL PANEL (NAVİGASYON) ---
 st.sidebar.title("👑 FreedomOS v4.6")
-st.sidebar.markdown("*Mark Tilbury %1 Mentorluk Sistemi*")
+st.sidebar.markdown("*Alpi %'lik Mentorluk Sistemi*")
 st.sidebar.divider()
 
 # Canlı Fiyatlar
