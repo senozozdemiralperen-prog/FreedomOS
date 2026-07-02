@@ -6,24 +6,23 @@ from datetime import datetime
 from sklearn.linear_model import LinearRegression
 
 # Sayfa Genişlik ve Tema Ayarı
-st.set_page_config(page_title="WealthOS - Kalıcı Varlık Yönetim Sistemi", layout="wide", page_icon="💼")
+st.set_page_config(page_title="FreedomOS - Kalıcı Varlık ve Özgürlük Yönetimi", layout="wide", page_icon="💼")
 
 # --- BULUT VERİ TABANI (GOOGLE SHEETS) BAĞLANTISI ---
-# Kendi Google Sheets linkinizi buraya eklediniz, sistem doğrudan bu link üzerinden çalışacak
 GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BIYr-AaryZp7cisYJZP6lilqdNfaBezcGIAJUkJLf80/edit?usp=sharing"
 
-# Bağlantı motorunu (conn) burada açıkça tanımlıyoruz ki güncelleme yaparken hata vermesin
+# Bağlantı motorunu 'gsheets' tipiyle kararlı hale getiriyoruz
 try:
-    conn = st.connection("gsheets", type="sheets")
+    conn = st.connection("gsheets", type="gsheets")
 except Exception as e:
-    st.error(f"Bağlantı motoru başlatılamadı: {e}")
+    st.error(f"Bağlantı motoru başlatılamadı: {e}. Lütfen requirements.txt dosyanıza 'st-gsheets-connection' eklediğinizden emin olun.")
 
 # Veritabanından okuma fonksiyonları
 def load_data(sheet_name):
     try:
-        # Doğrudan link üzerinden ve şifreye ihtiyaç duymadan okuma tetiklenir
         return conn.read(spreadsheet=GOOGLE_SHEET_URL, worksheet=sheet_name, ttl="0m")
     except Exception as e:
+        # Eğer tablolar boşsa veya henüz oluşmadıysa şablon DataFrame'ler döner
         if sheet_name == "Giderler":
             return pd.DataFrame(columns=[
                 "Dönem/Ay", "Net Gelir", "Kira/Mutfak", "Faturalar", "Kredi/Borç", 
@@ -34,37 +33,46 @@ def load_data(sheet_name):
                 "Dönem/Ay", "Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia", "Toplam Varlık"
             ])
 
-# Hafıza alanlarını doğrudan canlı linke bağlıyoruz
+# Verileri canlı Sheets üzerinden session_state'e çekiyoruz
 st.session_state.income_expense_history = load_data("Giderler")
 st.session_state.investment_history = load_data("Varlıklar")
 
 # --- SOL PANEL: SAYFA SEÇİCİ NAVİGASYON ---
-st.sidebar.title("💼 WealthOS v3.0 (Canlı Veri)")
-st.sidebar.markdown("*Verileriniz Google Sheets Üzerinde Ömür Boyu Güvende*")
+st.sidebar.title("💼 FreedomOS v3.0")
+st.sidebar.markdown("*Finansal Özgürlük ve Varlık Takip Sistemi*")
 st.sidebar.divider()
 
 page = st.sidebar.radio(
     "Gitmek İstediğiniz Sayfa:",
-    ["🏠 Genel Durum & Özet Paneli", "📊 Gelir / Detaylı Gider Kaydı", "📈 Varlık & Yatırım Takibi", "🔮 İleri Yönelik Öngörü & Yapay Zeka"]
+    ["🏠 Genel Durum & Özet Paneli", "📊 Gelir / Detaylı Gider Kaydı", "📈 Varlık & Yatırım Takibi", "🔮 Maaşlı Çalışmadan Kurtulma Analizi"]
 )
 st.sidebar.divider()
 
 # --- SAYFA 1: GENEL DURUM & ÖZET PANELİ ---
 if page == "🏠 Genel Durum & Özet Paneli":
     st.header("🏠 Finansal Durum Özet Paneli")
-    st.markdown("Google Sheets bulut veri tabanınızdaki güncel mali verilerin anlık izdüşümü.")
+    st.markdown("Google Sheets üzerindeki güncel mali verilerinizin ve varlık dağılımınızın anlık analizi.")
     
-    if st.session_state.income_expense_history.empty or st.session_state.investment_history.empty:
-        st.info("👋 WealthOS'a Hoş Geldiniz! Sistemde henüz geçmiş veri kaydı bulunmuyor. Başlamak için lütfen sol menüden **'Gelir / Detaylı Gider Kaydı'** ve **'Varlık & Yatırım Takibi'** sayfalarına giderek ilk veri girişlerinizi yapın.")
+    # Veri kontrolü (Her iki tablonun da en az bir satır veri içermesi gerekir)
+    if st.session_state.income_expense_history.empty or len(st.session_state.income_expense_history) == 0 or st.session_state.investment_history.empty or len(st.session_state.investment_history) == 0:
+        st.info("👋 FreedomOS'a Hoş Geldiniz! Sistemde henüz geçmiş veri kaydı bulunmuyor veya Google Sheets bağlantısı bekleniyor. Başlamak için lütfen sol menüden **'Gelir / Detaylı Gider Kaydı'** ve **'Varlık & Yatırım Takibi'** sayfalarına giderek ilk veri girişlerinizi yapın.")
     else:
         last_month_mali = st.session_state.income_expense_history.iloc[-1]
         last_month_varlik = st.session_state.investment_history.iloc[-1]
         
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("💰 Son Ay Net Gelir", f"{float(last_month_mali['Net Gelir']):,.0f} TL")
-        col2.metric("📉 Son Ay Toplam Gider", f"{float(last_month_mali['Toplam Gider']):,.0f} TL", delta=f"-{float(last_month_mali['Toplam Gider'])/float(last_month_mali['Net Gelir'])*100:.1f}% Gelire Oranı", delta_color="inverse")
-        col3.metric("🚀 Aylık Tasarruf Gücü", f"{float(last_month_mali['Net Tasarruf']):,.0f} TL")
-        col4.metric("👑 Toplam Varlık Büyüklüğü", f"{float(last_month_varlik['Toplam Varlık']):,.0f} TL")
+        
+        # Metrik kutuları
+        gelir_val = float(last_month_mali['Net Gelir']) if pd.notnull(last_month_mali['Net Gelir']) else 0
+        gider_val = float(last_month_mali['Toplam Gider']) if pd.notnull(last_month_mali['Toplam Gider']) else 0
+        tasarruf_val = float(last_month_mali['Net Tasarruf']) if pd.notnull(last_month_mali['Net Tasarruf']) else 0
+        varlik_val = float(last_month_varlik['Toplam Varlık']) if pd.notnull(last_month_varlik['Toplam Varlık']) else 0
+        
+        col1.metric("💰 Son Ay Net Gelir", f"{gelir_val:,.0f} TL")
+        gider_oran = (gider_val / gelir_val * 100) if gelir_val > 0 else 0
+        col2.metric("📉 Son Ay Toplam Gider", f"{gider_val:,.0f} TL", delta=f"-{gider_oran:.1f}% Gelire Oranı", delta_color="inverse")
+        col3.metric("🚀 Aylık Tasarruf Gücü", f"{tasarruf_val:,.0f} TL")
+        col4.metric("👑 Toplam Varlık Büyüklüğü", f"{varlik_val:,.0f} TL")
         
         st.divider()
         st.subheader("📊 Grafiksel Analizler")
@@ -73,16 +81,22 @@ if page == "🏠 Genel Durum & Özet Paneli":
         with g1:
             st.markdown("**Gider Dağılım Analizi (Son Ay)**")
             gider_labels = ["Kira/Mutfak", "Faturalar", "Kredi/Borç", "Ulaşım/Araç", "Sosyal/Eğlence", "Diğer Giderler"]
-            gider_values = [float(last_month_mali[l]) for l in gider_labels]
-            fig_gider = px.pie(names=gider_labels, values=gider_values, hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
-            st.plotly_chart(fig_gider, use_container_width=True)
+            gider_values = [float(last_month_mali[l]) if pd.notnull(last_month_mali[l]) else 0 for l in gider_labels]
+            if sum(gider_values) > 0:
+                fig_gider = px.pie(names=gider_labels, values=gider_values, hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu)
+                st.plotly_chart(fig_gider, use_container_width=True)
+            else:
+                st.text("Gider verisi bulunamadı.")
             
         with g2:
             st.markdown("**Yatırım Portföyü Dağılımı (Son Ay)**")
             varlik_labels = ["Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia"]
-            varlik_values = [float(last_month_varlik[l]) for l in varlik_labels]
-            fig_varlik = px.pie(names=varlik_labels, values=varlik_values, hole=0.4, color_discrete_sequence=px.colors.sequential.Mint)
-            st.plotly_chart(fig_varlik, use_container_width=True)
+            varlik_values = [float(last_month_varlik[l]) if pd.notnull(last_month_varlik[l]) else 0 for l in varlik_labels]
+            if sum(varlik_values) > 0:
+                fig_varlik = px.pie(names=varlik_labels, values=varlik_values, hole=0.4, color_discrete_sequence=px.colors.sequential.Mint)
+                st.plotly_chart(fig_varlik, use_container_width=True)
+            else:
+                st.text("Varlık verisi bulunamadı.")
 
 # --- SAYFA 2: GELİR / DETAYLI GİDER KAYDI ---
 elif page == "📊 Gelir / Detaylı Gider Kaydı":
@@ -93,7 +107,7 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
         with col1:
             period = st.text_input("Dönem / Ay Seçimi:", value=datetime.now().strftime("%B %Y"))
             gelir = st.number_input("Aylık Toplam Net Gelir (TL):", min_value=0, value=60000, step=1000)
-            g_kira = st.number_input("Kira, Ev and Mutfak Harcamaları (TL):", min_value=0, value=20000, step=500)
+            g_kira = st.number_input("Kira, Ev ve Mutfak Harcamaları (TL):", min_value=0, value=20000, step=500)
             g_fatura = st.number_input("Faturalar (TL):", min_value=0, value=4000, step=100)
         with col2:
             g_kredi = st.number_input("Kredi Kartları ve Borçlar (TL):", min_value=0, value=5000, step=500)
@@ -114,17 +128,17 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
         }])
         
         güncel_df = pd.concat([st.session_state.income_expense_history, yeni_satir], ignore_index=True)
-        # conn nesnesi artık yukarıda tanımlandığı için hata vermeden doğrudan spreadsheet_url üzerinden yazar
         conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Giderler", data=güncel_df)
         st.success(f"✔️ {period} verileri Google E-Tablonuza kalıcı olarak kaydedildi!")
         st.rerun()
 
     st.divider()
     st.subheader("📚 Buluttan Çekilen Geçmiş Zaman Günlükleri")
-    if not st.session_state.income_expense_history.empty:
+    if not st.session_state.income_expense_history.empty and len(st.session_state.income_expense_history) > 0:
         st.dataframe(st.session_state.income_expense_history, use_container_width=True)
         fig_trend = px.bar(st.session_state.income_expense_history, x="Dönem/Ay", y=["Net Gelir", "Toplam Gider", "Net Tasarruf"], barmode="group", title="Finansal Trendiniz")
         st.plotly_chart(fig_trend, use_container_width=True)
+
 # --- SAYFA 3: VARLIK & YATIRIM TAKİBİ ---
 elif page == "📈 Varlık & Yatırım Takibi":
     st.header("📈 Canlı Varlık ve Yatırım Sepeti Yönetimi")
@@ -148,84 +162,98 @@ elif page == "📈 Varlık & Yatırım Takibi":
             "Kripto Para": v_kripto, "Altın/Emtia": v_altin, "Toplam Varlık": toplam_varlik
         }])
         güncel_v_df = pd.concat([st.session_state.investment_history, yeni_varlik_satir], ignore_index=True)
-        # Güncelleme motoruna spreadsheet linki eklenerek kararlı hale getirildi
         conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Varlıklar", data=güncel_v_df)
         st.success(f"✔️ {v_period} portföy durumu Google Sheets'e kilitlendi!")
         st.rerun()
 
     st.divider()
     st.subheader("⏳ Buluttan Çekilen Tarihsel Varlık Günlüğü")
-    if not st.session_state.investment_history.empty:
+    if not st.session_state.investment_history.empty and len(st.session_state.investment_history) > 0:
         st.dataframe(st.session_state.investment_history, use_container_width=True)
         fig_growth = px.area(st.session_state.investment_history, x="Dönem/Ay", y=["Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia"], title="Varlık Büyüme Hızınız")
         st.plotly_chart(fig_growth, use_container_width=True)
 
-# --- SAYFA 4: İLERİ YÖNELİK ÖNGÖRÜ & YAPAY ZEKA ---
-elif page == "🔮 İleri Yönelik Öngörü & Yapay Zeka":
-    st.header("🔮 Gelecek Simülasyonu ve Finansal Özgürlük Analizi")
+# --- SAYFA 4: MAAŞLI ÇALIŞMADAN KURTULMA ANALİZİ (🔮 FIRE & ÖNGÖRÜ) ---
+elif page == "🔮 Maaşlı Çalışmadan Kurtulma Analizi":
+    st.header("🔮 Maaşlı Çalışmadan Kurtulma ve Finansal Özgürlük Analizi")
+    st.markdown("Bu sayfa, mevcut birikimleriniz ve finansal alışkanlıklarınız doğrultusunda işi ne zaman bırakabileceğinizi simüle eder.")
     
-    st.subheader("⚙️ Projeksiyon Parametreleri")
+    st.subheader("⚙️ Özgürlük Projeksiyon Parametreleri")
     sc1, sc2, sc3 = st.columns(3)
     with sc1:
-        inf_rate = st.slider("Yıllık Ortalama Enflasyon Tahmini (%):", 0, 100, 35)
+        inf_rate = st.slider("Yıllık Ortalama Enflasyon Tahmini (%):", 0, 100, 40)
     with sc2:
-        sal_rate = st.slider("Yıllık Maaş / Gelir Artış Kriteriniz (%):", 0, 100, 45)
+        sal_rate = st.slider("Yıllık Maaş / Gelir Artış Oranınız (%):", 0, 100, 45)
     with sc3:
-        roi_rate = st.slider("Yatırımların Yıllık Ortalama Getiri Potansiyeli (%):", 0, 150, 65)
+        roi_rate = st.slider("Yatırımların Yıllık Ortalama Getirisi Portföyü (%):", 0, 150, 60)
         
-    target_p = st.number_input("Hedeflenen Aylık Pasif Gelir (Bugünün Parasıyla TL):", min_value=1000, value=50000)
+    target_p = st.number_input("İşi Bıraktığınızda İhtiyacınız Olan Aylık Gelir (Bugünün Parasıyla TL):", min_value=1000, value=50000)
     st.divider()
     
-    if len(st.session_state.income_expense_history) >= 2 and len(st.session_state.investment_history) >= 1:
-        st.subheader("🤖 Yapay Zeka Trend Çıkarımı")
-        
+    if len(st.session_state.income_expense_history) >= 1 and len(st.session_state.investment_history) >= 1:
         df_mali = st.session_state.income_expense_history
-        X = np.array(range(len(df_mali))).reshape(-1, 1)
-        y = df_mali["Toplam Gider"].values.astype(float)
-        model = LinearRegression().fit(X, y)
-        artis_egilimi = model.coef_
         
-        if artis_egilimi > 0:
-            st.warning(f"⚠️ Gider Analizi: Aylık harcamalarınız her ay ortalama {artis_egilimi:,.2f} TL artma eğiliminde.")
-        else:
-            st.success(f"📈 Gider Analizi: Harika! Harcamalarınız her ay ortalama {abs(artis_egilimi):,.2f} TL düşüş eğiliminde.")
+        # Yapay Zeka ile Gider Trendi Analizi (En az 2 veri varsa çalışır)
+        if len(df_mali) >= 2:
+            st.subheader("🤖 Yapay Zeka Harcama Trend Çıkarımı")
+            X = np.array(range(len(df_mali))).reshape(-1, 1)
+            y = df_mali["Toplam Gider"].values.astype(float)
+            model = LinearRegression().fit(X, y)
+            artis_egilimi = model.coef_[0]
             
+            if artis_egilimi > 0:
+                st.warning(f"⚠️ Gider Analizi: Aylık harcamalarınız her ay ortalama {artis_egilimi:,.2f} TL artma eğiliminde. Tasarruf oranınızı artırmalısınız.")
+            else:
+                st.success(f"📈 Gider Analizi: Harika! Harcamalarınız her ay ortalama {abs(artis_egilimi):,.2f} TL düşüş eğiliminde.")
+        
+        # Başlangıç Değerleri
         current_portfolio = float(st.session_state.investment_history.iloc[-1]["Toplam Varlık"])
         base_income = float(df_mali.iloc[-1]["Net Gelir"])
         base_expense = float(df_mali.iloc[-1]["Toplam Gider"])
         
-        sim_months = 360  
+        sim_months = 360  # Maksimum 30 yıllık simülasyon
         freedom_m = -1
         sim_data = []
         
         for m in range(1, sim_months + 1):
+            # Her 12 ayda bir enflasyon ve maaş artışı yansıtılır
             if m > 1 and m % 12 == 1:
                 base_income *= (1 + sal_rate / 100)
                 base_expense *= (1 + inf_rate / 100)
                 target_p *= (1 + inf_rate / 100)
                 
             monthly_saving = base_income - base_expense
-            if monthly_saving < 0: monthly_saving = 0
+            if monthly_saving < 0: 
+                monthly_saving = 0
             
+            # Bileşik aylık getiri hesabı
             m_roi = (1 + roi_rate / 100) ** (1/12) - 1
             current_portfolio = current_portfolio * (1 + m_roi) + monthly_saving
+            
+            # %4 Kuralı Güvenli Çekim Oranı (Geleneksel Finansal Özgürlük Standardı)
             passive_gen = (current_portfolio * 0.04) / 12
             
             if passive_gen >= target_p and freedom_m == -1:
                 freedom_m = m
                 
-            sim_data.append({"Ay": m, "Yıl": round(m/12, 1), "Varlık": current_portfolio, "Pasif Gelir": passive_gen, "Hedef": target_p})
+            sim_data.append({
+                "Ay": m, 
+                "Yıl": round(m/12, 1), 
+                "Toplam Varlık (TL)": current_portfolio, 
+                "Üretilen Pasif Gelir (TL)": passive_gen, 
+                "Gerekli Hedef Gelir (TL)": target_p
+            })
             
         df_sim = pd.DataFrame(sim_data)
         
-        st.subheader("🔮 Özgürlük Projeksiyon Sonucu")
+        st.subheader("🏁 Özgürlük Projeksiyon Sonucu")
         if freedom_m != -1:
             st.balloons()
-            st.success(f"🥳 Yapay Zeka Hesaplaması Tamamlandı! {freedom_m // 12} Yıl {freedom_m % 12} Ay sonra finansal özgürlüğünüze kavuşuyorsunuz!")
+            st.success(f"🥳 Tebrikler! Yapılan hesaplamalara göre tam {freedom_m // 12} Yıl {freedom_m % 12} Ay sonra maaşlı çalışmaya ihtiyacınız kalmıyor ve özgür oluyorsunuz!")
         else:
-            st.error("⚠️ Mevcut oranlar simülasyonu 30 yıl içerisinde hedefinize ulaşmanıza izin vermiyor.")
+            st.error("⚠️ Mevcut tasarruf ve yatırım oranlarınızla önümüzdeki 30 yıl içerisinde finansal özgürlük hedefinize ulaşılamıyor. Roi oranını veya aylık tasarrufunuzu artırmayı deneyin.")
             
-        fig_sim = px.line(df_sim, x="Yıl", y=["Varlık", "Pasif Gelir", "Hedef"], title="30 Yıllık Gelecek Matrisi Simülasyonu")
+        fig_sim = px.line(df_sim, x="Yıl", y=["Toplam Varlık (TL)", "Üretilen Pasif Gelir (TL)", "Gerekli Hedef Gelir (TL)"], title="30 Yıllık Finansal Özgürlük Matrisi Projeksiyonu")
         st.plotly_chart(fig_sim, use_container_width=True)
     else:
-        st.warning("🔮 Yapay zeka tahminleme motorunun çalışabilmesi için Google Sheets üzerinde en az 2 farklı aya ait zaman kaydı bulunmalıdır.")
+        st.warning("🔮 Özgürlük simülasyonunun çalışabilmesi için Google Sheets üzerinde en az 1 aylık Gelir/Gider ve Varlık kaydınız bulunmalıdır.")
