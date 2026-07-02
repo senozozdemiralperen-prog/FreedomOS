@@ -7,7 +7,8 @@ import plotly.express as px
 st.set_page_config(page_title="Mark Tilbury Finansal Özgürlük Asistanı", layout="wide")
 
 st.title("💰 Mark Tilbury Tarzı Varlık Yönetimi ve Özgürlük Simülatörü")
-st.markdown("*"99% insan finansal sistemin kölesi olur çünkü geleceği planlamaz. Bugün bunu değiştiriyoruz!*")
+st.markdown("*99% insan finansal sistemin kölesi olur çünkü geleceği planlamaz. Bugün bunu değiştiriyoruz!*")
+
 
 # --- SOL PANEL: GİRDİLER ---
 st.sidebar.header("📋 Finansal Verileriniz")
