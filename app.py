@@ -22,7 +22,7 @@ if "investment_history" not in st.session_state:
 
 # --- SOL PANEL: SAYFA SEÇİCİ NAVİGASYON ---
 st.sidebar.title("💼 WealthOS v2.0")
-st.sidebar.markdown("*Mark Tilbury Standartlarında Kişiselleştirilmiş Finansal Yönetim Paneli*")
+st.sidebar.markdown("*Alpi Standartlarında Kişiselleştirilmiş Finansal Yönetim Paneli*")
 st.sidebar.divider()
 
 page = st.sidebar.radio(
@@ -38,7 +38,7 @@ if page == "🏠 Genel Durum & Özet Paneli":
     st.markdown("Sisteminizdeki güncel mali verilerin ve varlık dağılımlarınızın anlık izdüşümü.")
     
     if st.session_state.income_expense_history.empty or st.session_state.investment_history.empty:
-        st.info("👋 WealthOS'a Hoş Geldiniz! Sistemde henüz geçmiş veri kaydı bulunmuyor. Başlamak için lütfen sol menüden **'Gelir / Detaylı Gider Kaydı'** ve **'Varlık & Yatırım Takibi'** sayfalarına giderek ilk veri girişlerinizi yapın.")
+        st.info("👋 FreedomOS'a Hoş Geldiniz! Sistemde henüz geçmiş veri kaydı bulunmuyor. Başlamak için lütfen sol menüden **'Gelir / Detaylı Gider Kaydı'** ve **'Varlık & Yatırım Takibi'** sayfalarına giderek ilk veri girişlerinizi yapın.")
     else:
         last_month_mali = st.session_state.income_expense_history.iloc[-1]
         last_month_varlik = st.session_state.investment_history.iloc[-1]
