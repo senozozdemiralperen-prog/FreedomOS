@@ -9,14 +9,20 @@ from sklearn.linear_model import LinearRegression
 st.set_page_config(page_title="WealthOS - Kalıcı Varlık Yönetim Sistemi", layout="wide", page_icon="💼")
 
 # --- BULUT VERİ TABANI (GOOGLE SHEETS) BAĞLANTISI ---
-# Buraya kendi Google Sheets linkinizi doğrudan yapıştırın (Sonunun /edit olduğundan emin olun)
-GOOGLE_SHEET_URL = "https://google.com_GOOGLE_SHEETS_LİNKİNİZİ_YAPIŞTIRIN/edit"
+# Kendi Google Sheets linkinizi buraya eklediniz, sistem doğrudan bu link üzerinden çalışacak
+GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BIYr-AaryZp7cisYJZP6lilqdNfaBezcGIAJUkJLf80/edit?usp=sharing"
+
+# Bağlantı motorunu (conn) burada açıkça tanımlıyoruz ki güncelleme yaparken hata vermesin
+try:
+    conn = st.connection("gsheets", type="sheets")
+except Exception as e:
+    st.error(f"Bağlantı motoru başlatılamadı: {e}")
 
 # Veritabanından okuma fonksiyonları
 def load_data(sheet_name):
     try:
         # Doğrudan link üzerinden ve şifreye ihtiyaç duymadan okuma tetiklenir
-        return st.connection("gsheets", type="sheets").read(spreadsheet=GOOGLE_SHEET_URL, worksheet=sheet_name, ttl="0m")
+        return conn.read(spreadsheet=GOOGLE_SHEET_URL, worksheet=sheet_name, ttl="0m")
     except Exception as e:
         if sheet_name == "Giderler":
             return pd.DataFrame(columns=[
@@ -31,7 +37,6 @@ def load_data(sheet_name):
 # Hafıza alanlarını doğrudan canlı linke bağlıyoruz
 st.session_state.income_expense_history = load_data("Giderler")
 st.session_state.investment_history = load_data("Varlıklar")
-
 
 # --- SOL PANEL: SAYFA SEÇİCİ NAVİGASYON ---
 st.sidebar.title("💼 WealthOS v3.0 (Canlı Veri)")
@@ -109,7 +114,8 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
         }])
         
         güncel_df = pd.concat([st.session_state.income_expense_history, yeni_satir], ignore_index=True)
-        conn.update(worksheet="Giderler", data=güncel_df)
+        # conn nesnesi artık yukarıda tanımlandığı için hata vermeden doğrudan spreadsheet_url üzerinden yazar
+        conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Giderler", data=güncel_df)
         st.success(f"✔️ {period} verileri Google E-Tablonuza kalıcı olarak kaydedildi!")
         st.rerun()
 
@@ -142,7 +148,8 @@ elif page == "📈 Varlık & Yatırım Takibi":
             "Kripto Para": v_kripto, "Altın/Emtia": v_altin, "Toplam Varlık": toplam_varlik
         }])
         güncel_v_df = pd.concat([st.session_state.investment_history, yeni_varlik_satir], ignore_index=True)
-        conn.update(worksheet="Varlıklar", data=güncel_v_df)
+        # Güncelleme motoruna spreadsheet linki eklenerek kararlı hale getirildi
+        conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Varlıklar", data=güncel_v_df)
         st.success(f"✔️ {v_period} portföy durumu Google Sheets'e kilitlendi!")
         st.rerun()
 
