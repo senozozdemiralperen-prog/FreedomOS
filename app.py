@@ -176,7 +176,7 @@ elif page == "📈 Varlık & Portföy Rebalancing":
     t_kripto = st.sidebar.slider("Hedef Kripto %", 0, 100, 15)
     t_altin = st.sidebar.slider("Hedef Altın %", 0, 100, 25)
     
-    with St.form("varlik_formu", clear_on_submit=True):
+    with st.form("varlik_formu", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
             v_period = st.text_input("Dönem / Ay Seçimi:", value=datetime.now().strftime("%B %Y"))
