@@ -24,16 +24,19 @@ if "investment_history" not in st.session_state:
         "Dönem/Ay", "Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia", "Toplam Varlık"
     ])
 
-# Google Sheets'ten verileri çekmeye çalış
+# Google Sheets'ten verileri çek
 try:
     conn = st.connection("gsheets", type="sheets")
     sheets_gider = conn.read(spreadsheet=GOOGLE_SHEET_URL, worksheet="Giderler", ttl="0m")
     sheets_varlik = conn.read(spreadsheet=GOOGLE_SHEET_URL, worksheet="Varlıklar", ttl="0m")
-    if not sheets_gider.empty: st.session_state.income_expense_history = sheets_gider
-    if not sheets_varlik.empty: st.session_state.investment_history = sheets_varlik
+    
+    # Gelen veriler boş değilse ve sütunlar eşleşiyorsa session_state'e eşitle
+    if sheets_gider is not None and not sheets_gider.empty: 
+        st.session_state.income_expense_history = sheets_gider.dropna(how='all')
+    if sheets_varlik is not None and not sheets_varlik.empty: 
+        st.session_state.investment_history = sheets_varlik.dropna(how='all')
 except Exception as e:
-    # Hata verirse sessizce lokal hafızayı kullan, uygulamayı kilitleme!
-    pass
+    st.sidebar.warning("⚠️ Canlı e-tablo senkronizasyonu şu an lokal modda.")
 
 # --- CANLI PIYASA VERILERI (YFINANCE) ---
 @st.cache_data(ttl="15m")
@@ -56,11 +59,11 @@ def get_live_prices():
 live_market = get_live_prices()
 
 # --- SOL PANEL (NAVİGASYON) ---
-st.sidebar.title("👑 FreedomOS v4.5")
+st.sidebar.title("👑 FreedomOS v4.6")
 st.sidebar.markdown("*Mark Tilbury %1 Mentorluk Sistemi*")
 st.sidebar.divider()
 
-# Canlı Fiyatlar (Tek Seferde Gösterim)
+# Canlı Fiyatlar
 st.sidebar.subheader("🌍 Canlı Piyasa Takibi")
 if live_market["BIST100"] > 0: st.sidebar.metric("📊 BIST 100", f"{live_market['BIST100']:,.2f}")
 if live_market["Bitcoin ($)"] > 0: st.sidebar.metric("🪙 Bitcoin", f"${live_market['Bitcoin ($)']:,.0f}")
@@ -83,12 +86,15 @@ if page == "🏠 Genel Durum & Özet Paneli":
     st.header("🏠 Finansal Komuta Merkezi")
     
     if st.session_state.income_expense_history.empty or st.session_state.investment_history.empty:
-        st.info("👋 FreedomOS'a Hoş Geldiniz! Sistemde henüz geçmiş veri kaydı bulunmuyor. Başlamak için lütfen sol menüden **'Gelir / Detaylı Gider Kaydı'** sayfasına gidin.")
+        st.info("👋 FreedomOS'a Hoş Geldiniz! Sistemde henüz geçmiş veri kaydı bulunmuyor veya Google Sheets senkronizasyonu bekleniyor. Başlamak için lütfen sol menüden **'Gelir / Detaylı Gider Kaydı'** sayfasına giderek ilk verinizi ekleyin.")
     else:
         last_mali = st.session_state.income_expense_history.iloc[-1]
         last_varlik = st.session_state.investment_history.iloc[-1]
         
-        tasarruf_orani = (float(last_mali['Net Tasarruf']) / float(last_mali['Net Gelir'])) * 100
+        try:
+            tasarruf_orani = (float(last_mali['Net Tasarruf']) / float(last_mali['Net Gelir'])) * 100
+        except:
+            tasarruf_orani = 0
         
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("💰 Son Ay Net Gelir", f"{float(last_mali['Net Gelir']):,.0f} TL")
@@ -110,12 +116,12 @@ if page == "🏠 Genel Durum & Özet Paneli":
         with g1:
             st.markdown("**Gider Dağılım Analizi (Son Ay)**")
             gider_labels = ["Kira/Mutfak", "Faturalar", "Kredi/Borç", "Ulaşım/Araç", "Sosyal/Eğlence", "Diğer Giderler"]
-            gider_values = [float(last_mali[l]) for l in gider_labels]
+            gider_values = [float(last_mali[l]) for l in gider_labels if l in last_mali]
             st.plotly_chart(px.pie(names=gider_labels, values=gider_values, hole=0.4, color_discrete_sequence=px.colors.sequential.RdBu), use_container_width=True)
         with g2:
             st.markdown("**Yatırım Portföyü Dağılımı (Son Ay)**")
             varlik_labels = ["Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia"]
-            varlik_values = [float(last_varlik[l]) for l in varlik_labels]
+            varlik_values = [float(last_varlik[l]) for l in varlik_labels if l in last_varlik]
             st.plotly_chart(px.pie(names=varlik_labels, values=varlik_values, hole=0.4, color_discrete_sequence=px.colors.sequential.Mint), use_container_width=True)
 
 # --- SAYFA 2: GELİR / DETAYLI GİDER KAYDI ---
@@ -135,7 +141,7 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
             g_sosyal = st.number_input("Sosyal Hayat ve Eğlence (TL):", min_value=0, value=4000, step=100)
             g_diger = st.number_input("Diğer Harcamalar (TL):", min_value=0, value=2000, step=100)
             
-        submit_mali = st.form_submit_button("💰 Verileri Kaydet")
+        submit_mali = st.form_submit_button("💰 Verileri Google Sheets'e Gönder")
         
     if submit_mali:
         toplam_gider = g_kira + g_fatura + g_kredi + g_ulasim + g_sosyal + g_diger
@@ -149,13 +155,15 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
         
         st.session_state.income_expense_history = pd.concat([st.session_state.income_expense_history, yeni_satir], ignore_index=True)
         try:
-            conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Giderler", data=st.session_state.income_expense_history)
-        except: pass
-        st.success(f"✔️ {period} verileri başarıyla sisteme işlendi!")
+            # Buluta tam üzerine yazma parametreleriyle (indekssiz) zorlayarak gönderiyoruz
+            conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Giderler", data=st.session_state.income_expense_history, index=False)
+            st.success(f"✔️ {period} verileri Google E-Tablonuza kalıcı olarak işlendi!")
+        except Exception as e:
+            st.error(f"Veri yerel hafızaya yazıldı fakat buluta gönderilemedi. Lütfen 2. Adımı uygulayın. Hata: {e}")
         st.rerun()
 
     if not st.session_state.income_expense_history.empty:
-        st.subheader("📚 Geçmiş Zaman Günlükleri")
+        st.subheader("📚 Sistemde Kayıtlı Zaman Günlükleri")
         st.dataframe(st.session_state.income_expense_history, use_container_width=True)
 
 # --- SAYFA 3: VARLIK & PORTFÖY REBALANCING ---
@@ -168,7 +176,7 @@ elif page == "📈 Varlık & Portföy Rebalancing":
     t_kripto = st.sidebar.slider("Hedef Kripto %", 0, 100, 15)
     t_altin = st.sidebar.slider("Hedef Altın %", 0, 100, 25)
     
-    with st.form("varlik_formu", clear_on_submit=True):
+    with St.form("varlik_formu", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
             v_period = st.text_input("Dönem / Ay Seçimi:", value=datetime.now().strftime("%B %Y"))
@@ -178,7 +186,7 @@ elif page == "📈 Varlık & Portföy Rebalancing":
             v_kripto = st.number_input("Kripto Para Portföy Değeri (TL):", min_value=0, value=40000)
             v_altin = st.number_input("Altın, Gümüş ve Fiziki Emtialar (TL):", min_value=0, value=50000)
             
-        submit_varlik = st.form_submit_button("📈 Portföyü İşle")
+        submit_varlik = st.form_submit_button("📈 Portföyü Google Sheets'e Gönder")
         
     if submit_varlik:
         toplam_varlik = v_nakit + v_hisse + v_kripto + v_altin
@@ -188,9 +196,10 @@ elif page == "📈 Varlık & Portföy Rebalancing":
         }])
         st.session_state.investment_history = pd.concat([st.session_state.investment_history, yeni_varlik_satir], ignore_index=True)
         try:
-            conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Varlıklar", data=st.session_state.investment_history)
-        except: pass
-        st.success(f"✔️ {v_period} portföy durumu sisteme işlendi!")
+            conn.update(spreadsheet=GOOGLE_SHEET_URL, worksheet="Varlıklar", data=st.session_state.investment_history, index=False)
+            st.success(f"✔️ {v_period} portföy durumu Google Sheets'e kilitlendi!")
+        except Exception as e:
+            st.error(f"Portföy yerel hafızaya alındı fakat buluta gönderilemedi. Hata: {e}")
         st.rerun()
 
     if not st.session_state.investment_history.empty:
@@ -230,7 +239,6 @@ elif page == "🔮 Maaşlı Çalışmadan Kurtulma Motoru":
         
     target_p = st.number_input("Maaşlı Çalışmayı Bırakmak İçin İstenen Aylık Pasif Gelir (TL):", min_value=1000, value=50000)
     
-    # Eğer veri yoksa simülasyon çalışabilmesi için varsayılan baz değerler ata
     current_portfolio = float(st.session_state.investment_history.iloc[-1]["Toplam Varlık"]) if not st.session_state.investment_history.empty else 200000
     base_income = float(st.session_state.income_expense_history.iloc[-1]["Net Gelir"]) if not st.session_state.income_expense_history.empty else 60000
     base_expense = float(st.session_state.income_expense_history.iloc[-1]["Toplam Gider"]) if not st.session_state.income_expense_history.empty else 38000
@@ -250,7 +258,7 @@ elif page == "🔮 Maaşlı Çalışmadan Kurtulma Motoru":
         
         m_roi = (1 + roi_rate / 100) ** (1/12) - 1
         current_portfolio = current_portfolio * (1 + m_roi) + monthly_saving
-        passive_gen = (current_portfolio * 0.04) / 12  # Küresel %4 Güvenli Çekim Kuralı
+        passive_gen = (current_portfolio * 0.04) / 12
         
         if passive_gen >= target_p and freedom_m == -1:
             freedom_m = m
