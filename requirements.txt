@@ -1,3 +1,7 @@
 streamlit
 st-gsheets-connection
 yfinance
+plotly
+scikit-learn
+pandas
+numpy
