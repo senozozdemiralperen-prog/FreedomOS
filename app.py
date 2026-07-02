@@ -9,7 +9,6 @@ from sklearn.linear_model import LinearRegression
 st.set_page_config(page_title="WealthOS - Kişisel Varlık Yönetim Sistemi", layout="wide", page_icon="💼")
 
 # --- HAFIZA (SESSION STATE) KURULUMU ---
-# Uygulama yenilense bile geçmiş verilerin silinmemesi için yerel hafıza alanları açıyoruz
 if "income_expense_history" not in st.session_state:
     st.session_state.income_expense_history = pd.DataFrame(columns=[
         "Dönem/Ay", "Net Gelir", "Kira/Mutfak", "Faturalar", "Kredi/Borç", 
@@ -80,7 +79,7 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
         with col1:
             period = st.text_input("Dönem / Ay Seçimi (Örn: Ocak 2026, Şubat 2026):", value=datetime.now().strftime("%B %Y"))
             gelir = st.number_input("Aylık Toplam Net Gelir (TL):", min_value=0, value=60000, step=1000)
-            g_kira = st.number_input("Kira, Ev ve Mutfak Harcamaları (TL):", min_value=0, value=20000, step=500)
+            g_kira = st.number_input("Kira, Ev and Mutfak Harcamaları (TL):", min_value=0, value=20000, step=500)
             g_fatura = st.number_input("Faturalar (Elektrik, Su, İnternet, Telefon vb.) (TL):", min_value=0, value=4000, step=100)
         with col2:
             g_kredi = st.number_input("Kredi Kartları, Kredi Ödemeleri ve Borçlar (TL):", min_value=0, value=5000, step=500)
@@ -108,13 +107,11 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
     if not st.session_state.income_expense_history.empty:
         st.dataframe(st.session_state.income_expense_history, use_container_width=True)
         
-        # Tarihsel Değişim Grafiği
         fig_trend = px.bar(st.session_state.income_expense_history, x="Dönem/Ay", y=["Net Gelir", "Toplam Gider", "Net Tasarruf"],
                            barmode="group", title="Aylar Arası Finansal Dönüşüm Trendiniz")
         st.plotly_chart(fig_trend, use_container_width=True)
     else:
         st.info("Kayıtlı veri bulunmuyor.")
-
 # --- SAYFA 3: VARLIK & YATIRIM TAKİBİ ---
 elif page == "📈 Varlık & Yatırım Takibi":
     st.header("📈 Canlı Varlık ve Yatırım Sepeti Yönetimi")
@@ -146,7 +143,6 @@ elif page == "📈 Varlık & Yatırım Takibi":
     if not st.session_state.investment_history.empty:
         st.dataframe(st.session_state.investment_history, use_container_width=True)
         
-        # Kümülatif Büyüme Grafiği
         fig_growth = px.area(st.session_state.investment_history, x="Dönem/Ay", y=["Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia"],
                              title="Varlıklarınızın Zamana Göre Kümülant Kartografisi (Büyüme Hızı)")
         st.plotly_chart(fig_growth, use_container_width=True)
@@ -158,76 +154,72 @@ elif page == "🔮 İleri Yönelik Öngörü & Yapay Zeka":
     st.header("🔮 Gelecek Simülasyonu ve Finansal Özgürlük Analizi")
     st.markdown("Bu sayfa, geçmiş verilerinizden makine öğrenmesi ve finansal algoritmalar kullanarak ne zaman istifa edebileceğinizi hesaplar.")
     
-    # Makro Parametreler
     st.subheader("⚙️ Projeksiyon Parametreleri")
     sc1, sc2, sc3 = st.columns(3)
     with sc1:
         inf_rate = st.slider("Yıllık Ortalama Enflasyon Tahmini (%):", 0, 100, 35)
     with sc2:
-        sal_rate = st.slider("Yıllık Maaş / Gelir Artış Katsayınız (%):", 0, 100, 45)
+        sal_rate = st.slider("Yıllık Maaş / Gelir Artış Kriteriniz (%):", 0, 100, 45)
     with sc3:
         roi_rate = st.slider("Yatırımların Yıllık Ortalama Getiri Potansiyeli (%):", 0, 150, 65)
         
     target_p = st.number_input("Maaşlı Köleliği Bırakmak İçin Hedeflenen Aylık Pasif Gelir (Bugünün Parasıyla TL):", min_value=1000, value=50000)
-    
     st.divider()
     
-    # Geçmiş verilerden dinamik trend analizi çıkarımı (Yapay Zeka Eğilimi)
-    if len(st.session_state.income_expense_history) >= 2:
+    if len(st.session_state.income_expense_history) >= 2 and len(st.session_state.investment_history) >= 1:
         st.subheader("🤖 Yapay Zeka Trend Çıkarımı")
         
-        # Basit lineer regresyon modeli ile gider artış eğilimi ölçümü
         df_mali = st.session_state.income_expense_history
         X = np.array(range(len(df_mali))).reshape(-1, 1)
         y = df_mali["Toplam Gider"].values
         model = LinearRegression().fit(X, y)
-        artis_egilimi = model.coef_[0]
+        artis_egilimi = model.coef_
         
         if artis_egilimi > 0:
-        st.warning(f"⚠️ Gider Analizi: Geçmiş kayıtlarınıza göre aylık harcamalarınız her ay ortalama {artis_egilimi:,.2f} TL artma eğiliminde. Tasarruf oranınızı korumak için lüks tüketimi kısmalısınız.")
+            st.warning(f"⚠️ Gider Analizi: Geçmiş kayıtlarınıza göre aylık harcamalarınız her ay ortalama {artis_egilimi:,.2f} TL artma eğiliminde. Tasarruf oranınızı korumak için lüks tüketimi kısmalısınız.")
         else:
-        st.success(f"📈 Gider Analizi: Harika! Geçmiş kayıtlarınız harcamalarınızı kontrol altında tuttuğunuzu veya düşürdüğünüzü (Ayda ortalama {abs(artis_egilimi):,.2f} TL düşüş) gösteriyor.")
-
-        # Simülasyon Hesaplama Motoru
+            st.success(f"📈 Gider Analizi: Harika! Geçmiş kayıtlarınız harcamalarınızı kontrol altında tuttuğunuzu veya düşürdüğünüzü (Ayda ortalama {abs(artis_egilimi):,.2f} TL düşüş) gösteriyor.")
+            
         current_portfolio = st.session_state.investment_history.iloc[-1]["Toplam Varlık"]
         base_income = df_mali.iloc[-1]["Net Gelir"]
         base_expense = df_mali.iloc[-1]["Toplam Gider"]
-
-        sim_months = 360 # 30 Yıl
+        
+        sim_months = 360  
         freedom_m = -1
         sim_data = []
-
-        for m in range(1, sim_months + 1):
-        if m > 1 and m % 12 == 1:
-        base_income *= (1 + sal_rate / 100)
-        base_expense *= (1 + inf_rate / 100)
-        target_p *= (1 + inf_rate / 100)
-
-        monthly_saving = base_income - base_expense
-        if monthly_saving < 0: monthly_saving = 0
-
-        m_roi = (1 + roi_rate / 100) ** (1/12) - 1
-        current_portfolio = current_portfolio * (1 + m_roi) + monthly_saving
-
-        # %4 Sürdürülebilir Çekim Kuralı (Safe Withdrawal Rate) ile aylık gelir üretecipassive_gen = (current_portfolio * 0.04) / 12
-
-        if passive_gen >= target_p and freedom_m == -1:
-        freedom_m = m
-
-        sim_data.append({"Ay": m, "Yıl": round(m/12, 1), "Varlık": current_portfolio, "Pasif Gelir": passive_gen, "Hedef": target_p})
         
+        for m in range(1, sim_months + 1):
+            if m > 1 and m % 12 == 1:
+                base_income *= (1 + sal_rate / 100)
+                base_expense *= (1 + inf_rate / 100)
+                target_p *= (1 + inf_rate / 100)
+                
+            monthly_saving = base_income - base_expense
+            if monthly_saving < 0: 
+                monthly_saving = 0
+            
+            m_roi = (1 + roi_rate / 100) ** (1/12) - 1
+            current_portfolio = current_portfolio * (1 + m_roi) + monthly_saving
+            
+            passive_gen = (current_portfolio * 0.04) / 12
+            
+            if passive_gen >= target_p and freedom_m == -1:
+                freedom_m = m
+                
+            sim_data.append({"Ay": m, "Yıl": round(m/12, 1), "Varlık": current_portfolio, "Pasif Gelir": passive_gen, "Hedef": target_p})
+            
         df_sim = pd.DataFrame(sim_data)
-
+        
         st.subheader("🔮 Özgürlük Projeksiyon Sonucu")
         if freedom_m != -1:
-        st.balloons()
-        st.success(f"🥳 Yapay Zeka Hesaplaması Tamamlandı! Mevcut finansal disiplininiz ve makro tahminler doğrultusunda tam {freedom_m // 12} Yıl {freedom_m % 12} Ay sonra finansal özgürlüğünüze kavuşuyorsunuz!")
-        st.info(f"O tarihteki toplam net korumalı servet büyüklüğünüz: {df_sim.loc[freedom_m-1, 'Varlık']:,.0f} TL olacaktır.")
-            else:
-        st.error("⚠️ Mevcut enflasyon-artış oranları simülasyonu 30 yıl içerisinde hedefinize ulaşmanıza izin vermiyor. Yatırımlarınızın yıllık brüt getiri hedefini (% Getiri Potansiyeli) büyütmeniz veya yan gelir kolları açmanız şart.")
-
+            st.balloons()
+            st.success(f"🥳 Yapay Zeka Hesaplaması Tamamlandı! Mevcut finansal disiplininiz doğrultusunda tam {freedom_m // 12} Yıl {freedom_m % 12} Ay sonra finansal özgürlüğünüze kavuşuyorsunuz!")
+            st.info(f"O tarihteki toplam net korumalı servet büyüklüğünüz: {df_sim.loc[freedom_m-1, 'Varlık']:,.0f} TL olacaktır.")
+        else:
+            st.error("⚠️ Mevcut oranlar simülasyonu 30 yıl içerisinde hedefinize ulaşmanıza izin vermiyor. Yatırımlarınızın yıllık brüt getiri hedefini büyütmeniz şart.")
+            
         fig_sim = px.line(df_sim, x="Yıl", y=["Varlık", "Pasif Gelir", "Hedef"], title="30 Yıllık Gelecek Matrisi Simülasyonu")
         st.plotly_chart(fig_sim, use_container_width=True)
-
-        else:
-        st.warning("🔮 Yapay zeka tahminleme motorunun ve simülasyonların çalışabilmesi için 'Gelir/Gider' ve 'Varlık' sayfalarından en az 2 farklı aya ait geçmiş zaman kaydı girişi yapmanız gerekmektedir.")
+        
+    else:
+        st.warning("🔮 Yapay zeka tahminleme motorunun çalışabilmesi için 'Gelir/Gider' ve 'Varlık' sayfalarından en az 2 farklı aya ait zaman kaydı girişi yapmanız gerekmektedir.")
