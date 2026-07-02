@@ -37,16 +37,31 @@ st.session_state.income_expense_history = load_data("Giderler")
 st.session_state.investment_history = load_data("Varlıklar")
 
 # --- CANLI PIYASA VERILERI (YFINANCE) ---
-@st.cache_data(ttl="15m")  # Her 15 dakikada bir verileri yeniler, sistemi yormaz
+@st.cache_data(ttl="15m")  # Her 15 dakikada bir verileri yeniler
 def get_live_prices():
+    prices = {"BIST100": 0.0, "Bitcoin ($)": 0.0, "Ons Altın ($)": 0.0}
     try:
-        # Örnek olarak küresel ve yerel takip mekanizmaları
-        bist = yf.Ticker("XU100.IS").history(period="1d")['Close'].iloc[-1]
-        ons_altin = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
-        btc = yf.Ticker("BTC-USD").history(period="1d")['Close'].iloc[-1]
-        return {"BIST100": bist, "Ons Altın ($)": ons_altin, "Bitcoin ($)": btc}
+        bist_df = yf.Ticker("XU100.IS").history(period="1d")
+        if not bist_df.empty:
+            prices["BIST100"] = bist_df['Close'].iloc[-1]
     except:
-        return {"BIST100": 0, "Ons Altın ($)": 0, "Bitcoin ($)": 0}
+        pass
+        
+    try:
+        btc_df = yf.Ticker("BTC-USD").history(period="1d")
+        if not btc_df.empty:
+            prices["Bitcoin ($)"] = btc_df['Close'].iloc[-1]
+    except:
+        pass
+        
+    try:
+        gold_df = yf.Ticker("GC=F").history(period="1d")
+        if not gold_df.empty:
+            prices["Ons Altın ($)"] = gold_df['Close'].iloc[-1]
+    except:
+        pass
+        
+    return prices
 
 live_market = get_live_prices()
 
@@ -55,6 +70,23 @@ st.sidebar.title("👑 FreedomOS v4.0")
 st.sidebar.markdown("*Mark Tilbury %1 Mentorluk Sistemiyle Entegre*")
 st.sidebar.divider()
 
+st.sidebar.subheader("🌍 Canlı Piyasa Takibi")
+
+# .get() kullanarak KeyError riskini sıfıra indiriyoruz
+bist_val = live_market.get("BIST100", 0.0)
+btc_val = live_market.get("Bitcoin ($)", 0.0)
+gold_val = live_market.get("Ons Altın ($)", 0.0)
+
+if bist_val > 0: st.sidebar.metric("📊 BIST 100", f"{bist_val:,.2f}")
+else: st.sidebar.metric("📊 BIST 100", "Yüklenemedi")
+
+if btc_val > 0: st.sidebar.metric("🪙 Bitcoin", f"${btc_val:,.0f}")
+else: st.sidebar.metric("🪙 Bitcoin", "Yüklenemedi")
+
+if gold_val > 0: st.sidebar.metric("🏆 Ons Altın", f"${gold_val:,.1f}")
+else: st.sidebar.metric("🏆 Ons Altın", "Yüklenemedi")
+
+st.sidebar.divider()
 # Canlı Ticker Gösterimi sidebar'da şık duracaktır
 st.sidebar.subheader("🌍 Canlı Piyasa Takibi")
 st.sidebar.metric("📊 BIST 100", f"{live_market['BIST100']:,.2f}")
