@@ -56,14 +56,10 @@ if "investment_history" not in st.session_state:
 # --- CANLI PIYASA VERILERI ---
 @st.cache_data(ttl="15m")
 def get_live_prices():
-    prices = {"BIST100": 0.0, "S&P 500": 0.0, "Bitcoin ($)": 0.0, "Ons Altın ($)": 0.0}
+    prices = {"BIST100": 0.0, "Bitcoin ($)": 0.0, "Ons Altın ($)": 0.0}
     try:
         bist_df = yf.Ticker("XU100.IS").history(period="1d")
         if not bist_df.empty: prices["BIST100"] = bist_df['Close'].iloc[-1]
-    except: pass
-    try:
-        sp500_df = yf.Ticker("^GSPC").history(period="1d")
-        if not sp500_df.empty: prices["S&P 500"] = sp500_df['Close'].iloc[-1]
     except: pass
     try:
         btc_df = yf.Ticker("BTC-USD").history(period="1d")
@@ -105,7 +101,6 @@ st.sidebar.divider()
 
 st.sidebar.subheader("🌍 Canlı Piyasa Takibi")
 if live_market["BIST100"] > 0: st.sidebar.metric("📊 BIST 100", f"{live_market['BIST100']:,.2f}")
-if live_market["S&P 500"] > 0: st.sidebar.metric("🇺🇸 S&P 500", f"${live_market['S&P 500']:,.0f}")
 if live_market["Bitcoin ($)"] > 0: st.sidebar.metric("🪙 Bitcoin", f"${live_market['Bitcoin ($)']:,.0f}")
 if live_market["Ons Altın ($)"] > 0: st.sidebar.metric("🏆 Ons Altın", f"${live_market['Ons Altın ($)']:,.1f}")
 st.sidebar.divider()
@@ -170,7 +165,7 @@ if page == "🏠 Genel Durum & Özet Paneli":
 elif page == "📊 Gelir / Detaylı Gider Kaydı":
     st.header("📊 Detaylı Gelir ve Gider Kayıt Defteri")
     
-    with st.form("gider_formu", clear_on_submit=False):
+    with st.form("gider_formu", clear_on_submit=True):
         col1, col2 = st.columns(2)
         with col1:
             period = st.text_input("Dönem / Ay Seçimi:", value=datetime.now().strftime("%B %Y"))
@@ -185,23 +180,6 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
             
         submit_mali = st.form_submit_button("💰 Verileri Google Sheets'e Güvenli Kaydet")
         
-        # 50/25/15/10 ANALİZİ (Form içinde anlık hesaplama)
-        if gelir > 0:
-            st.divider()
-            st.subheader("💡 50/25/15/10 Bütçe Kuralı Analizi")
-            
-            # Kategorize etme
-            needs = g_kira + g_fatura + g_ulasim
-            savings = gelir - (g_kira + g_fatura + g_kredi + g_ulasim + g_sosyal + g_diger)
-            wants = g_sosyal + g_diger
-            debts = g_kredi
-            
-            c1, c2, c3, c4 = st.columns(4)
-            c1.metric("İhtiyaç (%50)", f"%{(needs/gelir)*100:.0f}", f"Hedef: {gelir*0.5:,.0f} TL")
-            c2.metric("Tasarruf (%25)", f"%{max(0, (savings/gelir)*100):.0f}", f"Hedef: {gelir*0.25:,.0f} TL")
-            c3.metric("İstekler (%15)", f"%{(wants/gelir)*100:.0f}", f"Hedef: {gelir*0.15:,.0f} TL")
-            c4.metric("Borç (%10)", f"%{(debts/gelir)*100:.0f}", f"Hedef: {gelir*0.10:,.0f} TL")
-            
     if submit_mali:
         toplam_gider = g_kira + g_fatura + g_kredi + g_ulasim + g_sosyal + g_diger
         net_tasarruf = gelir - toplam_gider
@@ -230,8 +208,6 @@ elif page == "📊 Gelir / Detaylı Gider Kaydı":
     if not st.session_state.income_expense_history.empty:
         st.subheader("📚 Sistemde Kayıtlı Zaman Günlükleri")
         st.dataframe(st.session_state.income_expense_history, use_container_width=True)
-
-# ... (KODUN KALAN KISMI AYNI ŞEKİLDE DEVAM EDER) ...
 
 # ==========================================
 # SAYFA 3: VARLIK & PORTFÖY REBALANCING
