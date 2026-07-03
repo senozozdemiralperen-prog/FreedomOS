@@ -529,11 +529,11 @@ elif page == "📦 Varlık Envanteri":
                 try:
                     sh = client.open_by_url(GOOGLE_SHEET_URL)
                     wks = sh.worksheet("Envanter")
-                    if not wks.get_all_values(): wks.append_row(varlik_adi, kategori, alis_fiyati, guncel_deger, notlar)
+                    if not wks.get_all_values(): wks.append_row(envanter_cols)
                     wks.append_row([varlik_adi, kategori, alis_fiyati, guncel_deger, notlar])
                     st.success("Varlık başarıyla eklendi!")
                     # Veriyi güncelle
-                    st.session_state.inventory_data = load_data_from_google("Envanter", varlik_adi, kategori, alis_fiyati, guncel_deger, notlar)
+                    st.session_state.inventory_data = load_data_from_google("Envanter", envanter_cols)
                     st.rerun()
                 except Exception as e:
                     st.error(f"Hata oluştu: {e}")
