@@ -17,6 +17,7 @@ GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1BIYr-AaryZp7cisYJZP6
 
 gider_cols = ["Dönem/Ay", "Net Gelir", "Kira/Mutfak", "Faturalar", "Kredi/Borç", "Ulaşım/Araç", "Sosyal/Eğlence", "Diğer Giderler", "Toplam Gider", "Net Tasarruf"]
 varlik_cols = ["Dönem/Ay", "Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia", "Toplam Varlık"]
+envanter_cols = ["Varlık Adı", "Kategori", "Alış Fiyatı", "Güncel Değer", "Notlar"]
 
 def get_gspread_client():
     if "gcp_service_account" not in st.secrets:
