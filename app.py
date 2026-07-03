@@ -115,6 +115,7 @@ page = st.sidebar.radio(
         "🏠 Komuta Merkezi: 25-50-15-10 Analizi", 
         "📊 Gelir / Gider Kaydı", 
         "🎯 İlk 1 Milyon TL (Bileşik Kırılma)",
+        "   Varlık Envanteri"
         "📈 Varlık & Portföy Rebalancing", 
         "☕ Vampir Harcama (Latte Faktörü)",
         "🛡️ Kıyamet Senaryosu (%15 Güvenlik)",
@@ -487,3 +488,50 @@ elif page == "🔮 Maaşlı Çalışmadan Kurtulma Motoru":
     if freedom_m != -1: st.success(f"🥳 **Hesaplama Tamamlandı!** Tam **{freedom_m // 12} Yıl {freedom_m % 12} Ay** sonra maaşlı çalışmaktan kalıcı olarak kurtuluyorsunuz!")
     else: st.error("⚠️ Mevcut oranlara göre 30 yıl içinde istifa etmek mümkün görünmüyor.")
     st.plotly_chart(px.line(df_sim, x="Yıl", y=["Varlık", "Pasif Gelir", "Hedef"], title="30 Yıllık Finansal Bağımsızlık Matrisi"), use_container_width=True)
+# ==========================================
+# SAYFA: 9 VARLIK ENVANTERİ
+# ==========================================
+elif page == "📦 Varlık Envanteri":
+    st.header("📦 Varlık Envanteri")
+    
+    # 1. Veri Yükleme
+    if "inventory_data" not in st.session_state:
+        st.session_state.inventory_data = load_data_from_google("Envanter", envanter_cols)
+    
+    df_env = st.session_state.inventory_data
+    
+    # 2. Özet Bilgi (Toplam Değer)
+    if not df_env.empty:
+        total_val = df_env["Güncel Değer"].sum()
+        st.metric("Toplam Varlık Değeri", f"{total_val:,.0f} TL")
+        st.dataframe(df_env, use_container_width=True)
+    
+    st.divider()
+    
+    # 3. Yeni Varlık Ekleme Formu
+    st.subheader("➕ Yeni Varlık Ekle")
+    with st.form("yeni_varlik_formu", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            varlik_adi = st.text_input("Varlık Adı")
+            kategori = st.selectbox("Kategori", ["Gayrimenkul", "Araç", "Değerli Eşya", "Diğer"])
+        with col2:
+            alis_fiyati = st.number_input("Alış Fiyatı (TL)", min_value=0.0)
+            guncel_deger = st.number_input("Güncel Değer (TL)", min_value=0.0)
+        
+        notlar = st.text_area("Notlar")
+        submit = st.form_submit_button("Envantere Ekle")
+        
+        if submit:
+            client = get_gspread_client()
+            if client:
+                try:
+                    sh = client.open_by_url(GOOGLE_SHEET_URL)
+                    wks = sh.worksheet("Envanter")
+                    wks.append_row([varlik_adi, kategori, alis_fiyati, guncel_deger, notlar])
+                    st.success("Varlık başarıyla eklendi!")
+                    # Veriyi güncelle
+                    st.session_state.inventory_data = load_data_from_google("Envanter", envanter_cols)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Hata oluştu: {e}")
