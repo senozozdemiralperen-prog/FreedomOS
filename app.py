@@ -388,6 +388,12 @@ elif page == "☕ Vampir Harcama (Latte Faktörü)":
         for ay in range(1, 361):
             birikim = (birikim + aylik_vampir) * (1 + m_roi)
             if ay % 12 == 0: vampir_data.append({"Yıl": ay//12, "Kayıp Servet (TL)": birikim})
+
+        # Bilgilendirici Mesaj
+if aylik_vampir > 0:
+    st.success(f"Eğer bu {aylik_vampir:,.0f} TL'yi her ay harcamak yerine yıllık %{int(yillik_getiri_orani*100)} getiri ile yatırıma yönlendirseydin, 10 yıl sonra cebinde **{fv:,.2f} TL** olacaktı. 📉")
+else:
+    st.info("Vampir harcaması girerek potansiyel kazancını görebilirsin.")
                 
         df_vampir = pd.DataFrame(vampir_data)
         st.plotly_chart(px.area(df_vampir, x="Yıl", y="Kayıp Servet (TL)", title=f"%{roi_rate} Getiri İle 30 Yıllık Kayıp Servet Dağı", color_discrete_sequence=["#FF4B4B"]), use_container_width=True)
