@@ -533,7 +533,7 @@ elif page == "📦 Varlık Envanteri":
                     wks.append_row([varlik_adi, kategori, alis_fiyati, guncel_deger, notlar])
                     st.success("Varlık başarıyla eklendi!")
                     # Veriyi güncelle
-                    st.session_state.inventory_data = load_data_from_google("Envanter", envanter_cols)
+                    st.session_state.inventory_data = load_data_from_google("Envanter", varlik_adi, kategori, alis_fiyati, guncel_deger, notlar)
                     st.rerun()
                 except Exception as e:
                     st.error(f"Hata oluştu: {e}")
