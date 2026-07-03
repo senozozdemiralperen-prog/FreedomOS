@@ -388,7 +388,38 @@ elif page == "☕ Vampir Harcama (Latte Faktörü)":
         for ay in range(1, 361):
             birikim = (birikim + aylik_vampir) * (1 + m_roi)
             if ay % 12 == 0: vampir_data.append({"Yıl": ay//12, "Kayıp Servet (TL)": birikim})
-        
+        # --- VAMPİR HARCAMA HESAPLAYICI ---
+st.divider()
+st.subheader("🧛‍♂️ Vampir Harcama Hesaplayıcı")
+st.markdown("Küçük harcamaların 10 yıllık 'fırsat maliyetini' hesaplayın.")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    # Kullanıcıdan aylık harcama verisi al
+    aylik_vampir = st.number_input("Aylık Vampir Harcamanız (TL)", min_value=0.0, value=1000.0, step=100.0, help="Kahve, abonelikler, gereksiz atıştırmalıklar vb.")
+    
+    # Beklenen getiri oranı (Varsayılan %15)
+    yillik_getiri_orani = st.slider("Yıllık Beklenen Getiri Oranı (%)", 5, 40, 15) / 100
+
+with col2:
+    # Hesaplama
+    yil = 10
+    aylik_faiz = yillik_getiri_orani / 12
+    toplam_ay = yil * 12
+    
+    # Bileşik Faiz Formülü (Future Value of Annuity)
+    # FV = P * (((1 + r)^n - 1) / r)
+    fv = aylik_vampir * (((1 + aylik_faiz)**toplam_ay - 1) / aylik_faiz)
+    
+    # Sonucu Göster
+    st.metric(label=f"{yil} Yıl Sonunda Potansiyel Birikim", value=f"{fv:,.2f} TL")
+
+# Bilgilendirici Mesaj
+if aylik_vampir > 0:
+    st.success(f"Eğer bu {aylik_vampir:,.0f} TL'yi her ay harcamak yerine yıllık %{int(yillik_getiri_orani*100)} getiri ile yatırıma yönlendirseydin, 10 yıl sonra cebinde **{fv:,.2f} TL** olacaktı. 📉")
+else:
+    st.info("Vampir harcaması girerek potansiyel kazancını görebilirsin.")
         df_vampir = pd.DataFrame(vampir_data)
         st.plotly_chart(px.area(df_vampir, x="Yıl", y="Kayıp Servet (TL)", title=f"%{roi_rate} Getiri İle 30 Yıllık Kayıp Servet Dağı", color_discrete_sequence=["#FF4B4B"]), use_container_width=True)
 
