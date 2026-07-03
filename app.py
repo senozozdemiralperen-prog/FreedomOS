@@ -390,9 +390,9 @@ elif page == "☕ Vampir Harcama (Latte Faktörü)":
             if ay % 12 == 0: vampir_data.append({"Yıl": ay//12, "Kayıp Servet (TL)": birikim})
 
         # Bilgilendirici Mesaj
-if aylik_vampir > 0:
+    if aylik_vampir > 0:
     st.success(f"Eğer bu {aylik_vampir:,.0f} TL'yi her ay harcamak yerine yıllık %{int(yillik_getiri_orani*100)} getiri ile yatırıma yönlendirseydin, 10 yıl sonra cebinde **{fv:,.2f} TL** olacaktı. 📉")
-else:
+    else:
     st.info("Vampir harcaması girerek potansiyel kazancını görebilirsin.")
                 
         df_vampir = pd.DataFrame(vampir_data)
