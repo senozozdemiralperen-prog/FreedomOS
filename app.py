@@ -134,7 +134,7 @@ if page == "🏠 Komuta Merkezi: 25-50-15-10 Analizi":
     st.markdown("Mark Tilbury'nin zenginlik formülü: Gelirinizin **%50'si İhtiyaçlara, %25'i Yatırıma (Büyüme), %15'i Güvenliğe (Acil Durum/Borç), %10'u Ödüllere (Eğlence)** gitmelidir.")
     
     if st.session_state.income_expense_history.empty or st.session_state.investment_history.empty:
-        st.info("👋 FreedomOS'a Hoş Geldiniz! Başlamak için lütfen yan menüden **'Gelir / Detaylı Gider Kaydı'** sayfasına gidin.")
+        st.info("👋 FreedomOS'a Hoş Geldiniz! Başlamak için lütfen yan menüden **'Gelir / Gider Kaydı'** sayfasına gidin.")
     else:
         last_mali = st.session_state.income_expense_history.iloc[-1]
         last_varlik = st.session_state.investment_history.iloc[-1]
