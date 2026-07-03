@@ -115,7 +115,7 @@ page = st.sidebar.radio(
         "🏠 Komuta Merkezi: 25-50-15-10 Analizi", 
         "📊 Gelir / Gider Kaydı", 
         "🎯 İlk 1 Milyon TL (Bileşik Kırılma)",
-        "📦 Varlık Envanteri,
+        "📦 Varlık Envanteri",
         "📈 Varlık & Portföy Rebalancing", 
         "☕ Vampir Harcama (Latte Faktörü)",
         "🛡️ Kıyamet Senaryosu (%15 Güvenlik)",
