@@ -69,6 +69,10 @@ def get_live_prices():
         gold_df = yf.Ticker("GC=F").history(period="1d")
         if not gold_df.empty: prices["Ons Altın ($)"] = gold_df['Close'].iloc[-1]
     except: pass
+    try:
+        sp500_df = yf.Ticker("^GSPC").history(period="1d")
+        if not sp500_df.empty: prices["S&P 500"] = sp500_df['Close'].iloc[-1]
+    except: pass
     return prices
 
 live_market = get_live_prices()
@@ -102,6 +106,7 @@ st.sidebar.subheader("🌍 Canlı Piyasa Takibi")
 if live_market["BIST100"] > 0: st.sidebar.metric("📊 BIST 100", f"{live_market['BIST100']:,.2f}")
 if live_market["Bitcoin ($)"] > 0: st.sidebar.metric("🪙 Bitcoin", f"${live_market['Bitcoin ($)']:,.0f}")
 if live_market["Ons Altın ($)"] > 0: st.sidebar.metric("🏆 Ons Altın", f"${live_market['Ons Altın ($)']:,.1f}")
+if live_market.get("S&P 500", 0) > 0: st.sidebar.metric("📈 S&P 500", f"${live_market['S&P 500']:,.0f}")
 st.sidebar.divider()
 
 page = st.sidebar.radio(
