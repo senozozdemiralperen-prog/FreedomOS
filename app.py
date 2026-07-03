@@ -56,10 +56,14 @@ if "investment_history" not in st.session_state:
 # --- CANLI PIYASA VERILERI ---
 @st.cache_data(ttl="15m")
 def get_live_prices():
-    prices = {"BIST100": 0.0, "Bitcoin ($)": 0.0, "Ons Altın ($)": 0.0}
+    prices = {"BIST100": 0.0, "S&P 500": 0.0, "Bitcoin ($)": 0.0, "Ons Altın ($)": 0.0}
     try:
         bist_df = yf.Ticker("XU100.IS").history(period="1d")
         if not bist_df.empty: prices["BIST100"] = bist_df['Close'].iloc[-1]
+    except: pass
+    try:
+        sp500_df = yf.Ticker("^GSPC").history(period="1d")
+        if not sp500_df.empty: prices["S&P 500"] = sp500_df['Close'].iloc[-1]
     except: pass
     try:
         btc_df = yf.Ticker("BTC-USD").history(period="1d")
@@ -73,7 +77,7 @@ def get_live_prices():
 
 live_market = get_live_prices()
 
-# --- ROZET VE OYUNLAŞTIRMA (25/50/15/10 MANTIĞI) ---
+# --- ROZET VE OYUNLAŞTIRMA HESAPLAMASI (GLOBAL) ---
 def calculate_badge():
     tasarruf_orani = 0
     toplam_varlik = 0
@@ -85,21 +89,23 @@ def calculate_badge():
         last_v = st.session_state.investment_history.iloc[-1]
         toplam_varlik = float(last_v['Toplam Varlık'])
         
-    if toplam_varlik >= 1000000 and tasarruf_orani >= 40: return "👑 %1 Kulübü Lideri", "success"
-    elif toplam_varlik >= 100000 and tasarruf_orani >= 25: return "📈 Bileşik Getiri Avcısı", "info"
-    elif tasarruf_orani >= 15: return "🛡️ %15 Güvenlik Savaşçısı", "warning"
+    if toplam_varlik >= 1000000 and tasarruf_orani >= 50: return "👑 %1 Kulübü Lideri", "success"
+    elif toplam_varlik >= 100000 and tasarruf_orani >= 30: return "💼 Sermaye Sahibi", "info"
+    elif tasarruf_orani >= 20: return "⚔️ Maaşlı Asker", "warning"
     else: return "🛒 Tüketim Kölesi", "error"
 
 # --- SOL PANEL ---
-st.sidebar.title("👑 FreedomOS v6.0")
-st.sidebar.markdown("*25/50/15/10 - %1 Yönetim Sistemi*")
+st.sidebar.title("👑 FreedomOS v5.0")
+st.sidebar.markdown("*Mark Tilbury %1 Mentorluk Sistemi*")
 
+# Oyunlaştırma Rozeti Gösterimi
 badge_name, badge_type = calculate_badge()
 st.sidebar.markdown(f"### Mevcut Rütbeniz: \n**{badge_name}**")
 st.sidebar.divider()
 
 st.sidebar.subheader("🌍 Canlı Piyasa Takibi")
 if live_market["BIST100"] > 0: st.sidebar.metric("📊 BIST 100", f"{live_market['BIST100']:,.2f}")
+if live_market["S&P 500"] > 0: st.sidebar.metric("🇺🇸 S&P 500", f"${live_market['S&P 500']:,.0f}")
 if live_market["Bitcoin ($)"] > 0: st.sidebar.metric("🪙 Bitcoin", f"${live_market['Bitcoin ($)']:,.0f}")
 if live_market["Ons Altın ($)"] > 0: st.sidebar.metric("🏆 Ons Altın", f"${live_market['Ons Altın ($)']:,.1f}")
 st.sidebar.divider()
@@ -107,12 +113,11 @@ st.sidebar.divider()
 page = st.sidebar.radio(
     "Gitmek İstediğiniz Sayfa:",
     [
-        "🏠 Komuta Merkezi: 25-50-15-10 Analizi", 
-        "📊 Gelir / Gider Kaydı", 
-        "🎯 İlk 1 Milyon TL (Bileşik Kırılma)",
+        "🏠 Genel Durum & Özet Paneli", 
+        "📊 Gelir / Detaylı Gider Kaydı", 
         "📈 Varlık & Portföy Rebalancing", 
         "☕ Vampir Harcama (Latte Faktörü)",
-        "🛡️ Kıyamet Senaryosu (%15 Güvenlik)",
+        "🛡️ Kıyamet Senaryosu (Stres Testi)",
         "❄️ Pasif Gelir Kar Topu",
         "🔮 Maaşlı Çalışmadan Kurtulma Motoru"
     ]
@@ -120,90 +125,83 @@ page = st.sidebar.radio(
 st.sidebar.divider()
 
 # ==========================================
-# SAYFA 1: KOMUTA MERKEZİ & 25/50/15/10 ANALİZİ
+# SAYFA 1: GENEL DURUM & ÖZET PANELİ
 # ==========================================
-if page == "🏠 Komuta Merkezi: 25-50-15-10 Analizi":
+if page == "🏠 Genel Durum & Özet Paneli":
     st.header("🏠 Finansal Komuta Merkezi")
-    st.markdown("Mark Tilbury'nin zenginlik formülü: Gelirinizin **%50'si İhtiyaçlara, %25'i Yatırıma (Büyüme), %15'i Güvenliğe (Acil Durum/Borç), %10'u Ödüllere (Eğlence)** gitmelidir.")
     
     if st.session_state.income_expense_history.empty or st.session_state.investment_history.empty:
-        st.info("👋 FreedomOS'a Hoş Geldiniz! Başlamak için lütfen yan menüden **'Gelir / Detaylı Gider Kaydı'** sayfasına gidin.")
+        st.info("👋 FreedomOS'a Hoş Geldiniz! Başlamak için lütfen yan menüden **'Gelir / Detaylı Gider Kaydı'** sayfasına giderek ilk ay verinizi ekleyin.")
     else:
         last_mali = st.session_state.income_expense_history.iloc[-1]
         last_varlik = st.session_state.investment_history.iloc[-1]
         
-        net_gelir = float(last_mali['Net Gelir']) if float(last_mali['Net Gelir']) > 0 else 1
-        
-        # 25/50/15/10 Kategorizasyonu
-        actual_essentials = float(last_mali["Kira/Mutfak"]) + float(last_mali["Faturalar"]) + float(last_mali["Ulaşım/Araç"])
-        actual_rewards = float(last_mali["Sosyal/Eğlence"]) + float(last_mali["Diğer Giderler"])
-        
-        net_tasarruf = float(last_mali["Net Tasarruf"])
-        if net_tasarruf > 0:
-            tas_stab = net_tasarruf * (15.0 / 40.0) # Toplam %40 tasarrufun %15'lik kısmı
-            tas_grow = net_tasarruf * (25.0 / 40.0) # Toplam %40 tasarrufun %25'lik kısmı
-        else:
-            tas_stab = 0
-            tas_grow = 0
-            
-        actual_stability = float(last_mali["Kredi/Borç"]) + tas_stab
-        actual_growth = tas_grow
-        
-        perc_essentials = (actual_essentials / net_gelir) * 100
-        perc_rewards = (actual_rewards / net_gelir) * 100
-        perc_stability = (actual_stability / net_gelir) * 100
-        perc_growth = (actual_growth / net_gelir) * 100
+        try: tasarruf_orani = (float(last_mali['Net Tasarruf']) / float(last_mali['Net Gelir'])) * 100
+        except: tasarruf_orani = 0
         
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("💰 Son Ay Net Gelir", f"{net_gelir:,.0f} TL")
+        col1.metric("💰 Son Ay Net Gelir", f"{float(last_mali['Net Gelir']):,.0f} TL")
         col2.metric("📉 Son Ay Toplam Gider", f"{float(last_mali['Toplam Gider']):,.0f} TL")
-        col3.metric("🚀 Aylık Yatırım (Büyüme)", f"{actual_growth:,.0f} TL")
-        col4.metric("👑 Toplam Varlık", f"{float(last_varlik['Toplam Varlık']):,.0f} TL")
+        col3.metric("🚀 Aylık Tasarruf Gücü", f"{float(last_mali['Net Tasarruf']):,.0f} TL")
+        col4.metric("👑 Toplam Varlık Büyüklüğü", f"{float(last_varlik['Toplam Varlık']):,.0f} TL")
         
         st.divider()
-        st.subheader("⚖️ 25-50-15-10 Uyumluluk Analizi (Bu Ay)")
-        
-        # Karşılaştırma Grafiği
-        df_kural = pd.DataFrame({
-            "Kategori": ["%50 İhtiyaçlar (Essentials)", "%15 Güvenlik & Borç (Stability)", "%25 Büyüme & Yatırım (Growth)", "%10 Ödül & Zevk (Rewards)"],
-            "Senin Oranın (%)": [perc_essentials, perc_stability, perc_growth, perc_rewards],
-            "Hedeflenen Oran (%)": [50, 15, 25, 10]
-        })
-        
-        fig = px.bar(df_kural, x="Kategori", y=["Senin Oranın (%)", "Hedeflenen Oran (%)"], barmode='group', 
-                     title="İdeal Zenginlik Formülü vs Senin Harcamaların",
-                     color_discrete_map={"Senin Oranın (%)": "#FF4B4B", "Hedeflenen Oran (%)": "#00CC96"})
-        st.plotly_chart(fig, use_container_width=True)
-        
-        if perc_growth >= 25: st.success("🔥 Mükemmel! Gelirinizin en az %25'ini geleceğinizi satın almak (Büyüme) için kullanıyorsunuz.")
-        else: st.warning(f"⚠️ Büyüme (Yatırım) oranınız %{perc_growth:.1f}. Zenginliğe giden yolda Mark Tilbury bu oranın %25 olmasını şart koşar. Harcamaları kısmalısınız.")
+        st.subheader("🧠 Mark Tilbury Finansal Sağlık Analizi")
+        if tasarruf_orani >= 50: st.success(f"🔥 **Mükemmel!** Tasarruf oranınız **%{tasarruf_orani:.1f}**. Parayı %1'lik kesim gibi yönetiyorsunuz.")
+        elif tasarruf_orani >= 20: st.info(f"👍 **İyi Durumdasınız:** Tasarruf oranınız **%{tasarruf_orani:.1f}**. Minimum %20 kuralını geçtiniz.")
+        else: st.warning(f"⚠️ **Geliştirilmeli:** Tasarruf oranınız **%{tasarruf_orani:.1f}**. 'Önce kendine öde!' Giderleri kısmalısınız.")
+
+        st.divider()
+        g1, g2 = st.columns(2)
+        with g1:
+            st.markdown("**Gider Dağılım Analizi**")
+            gider_labels = ["Kira/Mutfak", "Faturalar", "Kredi/Borç", "Ulaşım/Araç", "Sosyal/Eğlence", "Diğer Giderler"]
+            gider_values = [float(last_mali[l]) for l in gider_labels]
+            st.plotly_chart(px.pie(names=gider_labels, values=gider_values, hole=0.4), use_container_width=True)
+        with g2:
+            st.markdown("**Yatırım Portföyü Dağılımı**")
+            varlik_labels = ["Nakit Birikim", "Hisse Senedi", "Kripto Para", "Altın/Emtia"]
+            varlik_values = [float(last_varlik[l]) for l in varlik_labels]
+            st.plotly_chart(px.pie(names=varlik_labels, values=varlik_values, hole=0.4, color_discrete_sequence=px.colors.sequential.Mint), use_container_width=True)
 
 # ==========================================
-# SAYFA 2: GELİR / GİDER KAYDI
+# SAYFA 2: GELİR / DETAYLI GİDER KAYDI
 # ==========================================
-elif page == "📊 Gelir / Gider Kaydı":
-    st.header("📊 25/50/15/10 Gider Kayıt Defteri")
+elif page == "📊 Gelir / Detaylı Gider Kaydı":
+    st.header("📊 Detaylı Gelir ve Gider Kayıt Defteri")
     
-    with st.form("gider_formu", clear_on_submit=True):
-        period = st.text_input("Dönem / Ay Seçimi:", value=datetime.now().strftime("%B %Y"))
-        gelir = st.number_input("Aylık Toplam Net Gelir (TL):", min_value=0, value=60000, step=1000)
-        
-        st.markdown("---")
-        st.markdown("### 🏠 %50 İhtiyaçlar (Essentials)")
+    with st.form("gider_formu", clear_on_submit=False):
         col1, col2 = st.columns(2)
-        with col1: g_kira = st.number_input("Kira, Ev ve Mutfak (TL):", min_value=0, value=20000, step=500)
-        with col2: g_fatura = st.number_input("Faturalar (TL):", min_value=0, value=4000, step=100)
-        g_ulasim = st.number_input("Ulaşım ve Araç (TL):", min_value=0, value=3000, step=100)
-        
-        st.markdown("---")
-        st.markdown("### 🛡️ %15 Güvenlik & 🎢 %10 Ödül")
-        col3, col4 = st.columns(2)
-        with col3: g_kredi = st.number_input("Kredi Kartları / Borç Ödemeleri (TL):", min_value=0, value=5000, step=500)
-        with col4: g_sosyal = st.number_input("Sosyal Hayat ve Eğlence (TL):", min_value=0, value=4000, step=100)
-        g_diger = st.number_input("Diğer Harcamalar (TL):", min_value=0, value=2000, step=100)
+        with col1:
+            period = st.text_input("Dönem / Ay Seçimi:", value=datetime.now().strftime("%B %Y"))
+            gelir = st.number_input("Aylık Toplam Net Gelir (TL):", min_value=0, value=60000, step=1000)
+            g_kira = st.number_input("Kira, Ev ve Mutfak Harcamaları (TL):", min_value=0, value=20000, step=500)
+            g_fatura = st.number_input("Faturalar (TL):", min_value=0, value=4000, step=100)
+        with col2:
+            g_kredi = st.number_input("Kredi Kartları ve Borçlar (TL):", min_value=0, value=5000, step=500)
+            g_ulasim = st.number_input("Ulaşım ve Araç Masrafları (TL):", min_value=0, value=3000, step=100)
+            g_sosyal = st.number_input("Sosyal Hayat ve Eğlence (TL):", min_value=0, value=4000, step=100)
+            g_diger = st.number_input("Diğer Harcamalar (TL):", min_value=0, value=2000, step=100)
             
         submit_mali = st.form_submit_button("💰 Verileri Google Sheets'e Güvenli Kaydet")
         
+        # 50/25/15/10 ANALİZİ (Form içinde anlık hesaplama)
+        if gelir > 0:
+            st.divider()
+            st.subheader("💡 50/25/15/10 Bütçe Kuralı Analizi")
+            
+            # Kategorize etme
+            needs = g_kira + g_fatura + g_ulasim
+            savings = gelir - (g_kira + g_fatura + g_kredi + g_ulasim + g_sosyal + g_diger)
+            wants = g_sosyal + g_diger
+            debts = g_kredi
+            
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("İhtiyaç (%50)", f"%{(needs/gelir)*100:.0f}", f"Hedef: {gelir*0.5:,.0f} TL")
+            c2.metric("Tasarruf (%25)", f"%{max(0, (savings/gelir)*100):.0f}", f"Hedef: {gelir*0.25:,.0f} TL")
+            c3.metric("İstekler (%15)", f"%{(wants/gelir)*100:.0f}", f"Hedef: {gelir*0.15:,.0f} TL")
+            c4.metric("Borç (%10)", f"%{(debts/gelir)*100:.0f}", f"Hedef: {gelir*0.10:,.0f} TL")
+            
     if submit_mali:
         toplam_gider = g_kira + g_fatura + g_kredi + g_ulasim + g_sosyal + g_diger
         net_tasarruf = gelir - toplam_gider
@@ -229,76 +227,23 @@ elif page == "📊 Gelir / Gider Kaydı":
             except Exception as e:
                 st.error(f"❌ API Hatası: {e}")
 
-# ==========================================
-# SAYFA 3: YENİ - İLK 1 MİLYON TL MOTORU
-# ==========================================
-elif page == "🎯 İlk 1 Milyon TL (Bileşik Kırılma)":
-    st.header("🎯 İlk 1 Milyon TL ve Bileşik Getirinin Gücü")
-    st.markdown("> *\"İlk 100.000 Doları (veya 1 Milyon TL'yi) biriktirmek cehennem gibidir. Ama o barajı aştıktan sonra kar topu o kadar büyür ki, sonraki milyonlar kendiliğinden yuvarlanarak gelir.\"* - Mark Tilbury")
-    st.divider()
-    
-    current_portfolio = float(st.session_state.investment_history.iloc[-1]["Toplam Varlık"]) if not st.session_state.investment_history.empty else 0
-    monthly_saving = float(st.session_state.income_expense_history.iloc[-1]["Net Tasarruf"]) if not st.session_state.income_expense_history.empty else 10000
-    
-    # 25% (Growth) kuralına göre yatırıma giden kısım
-    if monthly_saving > 0: monthly_invest = monthly_saving * 0.625 
-    else: monthly_invest = 0
-    
-    st.write(f"**Mevcut Toplam Varlığınız:** {current_portfolio:,.0f} TL")
-    
-    col1, col2 = st.columns(2)
-    with col1: user_invest = st.number_input("Aylık Yatırım Tutarı (Büyüme/Growth) (TL):", min_value=0, value=int(monthly_invest) if monthly_invest>0 else 10000)
-    with col2: roi_rate = st.slider("Beklenen Yıllık Getiri (%):", 10, 150, 65)
-    
-    if st.button("Bileşik Getiri Kırılma Noktasını Hesapla 🚀"):
-        m_roi = (1 + roi_rate / 100) ** (1/12) - 1
-        port = current_portfolio
-        milestones = []
-        targets = [1000000, 2000000, 3000000, 4000000, 5000000]
-        target_idx = 0
-        last_milestone_year = 0
-        
-        for m in range(1, 1201): # Maksimum 100 yıl projeksiyon
-            port = port * (1 + m_roi) + user_invest
-            if target_idx < len(targets) and port >= targets[target_idx]:
-                current_year = m / 12
-                delta_years = current_year - last_milestone_year
-                milestones.append({
-                    "Hedef Barajı": f"{target_idx + 1}. Milyon TL", 
-                    "Sıfırdan Geçecek Süre (Yıl)": current_year,
-                    "Gereken Ekstra Zaman (Yıl)": delta_years
-                })
-                last_milestone_year = current_year
-                target_idx += 1
-                if target_idx == len(targets): break
-                
-        if milestones:
-            df_mil = pd.DataFrame(milestones)
-            st.success("Tebrikler! Bileşik getirinin sihrini grafiksel olarak ispatladık.")
-            
-            # Ekstra gereken zamanın azaldığını gösteren Çubuk Grafik
-            fig = px.bar(df_mil, x="Hedef Barajı", y="Gereken Ekstra Zaman (Yıl)", 
-                         text=df_mil["Gereken Ekstra Zaman (Yıl)"].apply(lambda x: f"{x:.1f} Yıl"),
-                         title="Her Yeni Milyon İçin Gereken 'Ekstra' Yıl Sayısı (Sürekli Düşüş)",
-                         color_discrete_sequence=["#00CC96"])
-            st.plotly_chart(fig, use_container_width=True)
-            
-            st.info("💡 **Analiz:** Gördüğünüz gibi ilk milyonu yapmak yıllar alıyor. Ancak paranız sizin için çalışmaya başladığında ikinci, üçüncü ve dördüncü milyonlar arasındaki bekleme süresi dramatik bir şekilde kısalıyor!")
-        else:
-            st.error("Bu yatırım oranıyla hedeflere ulaşmak çok uzun sürüyor. Aylık yatırımı veya getiriyi artırmalısınız.")
+    if not st.session_state.income_expense_history.empty:
+        st.subheader("📚 Sistemde Kayıtlı Zaman Günlükleri")
+        st.dataframe(st.session_state.income_expense_history, use_container_width=True)
+
+# ... (KODUN KALAN KISMI AYNI ŞEKİLDE DEVAM EDER) ...
 
 # ==========================================
-# SAYFA 4: VARLIK & PORTFÖY REBALANCING
+# SAYFA 3: VARLIK & PORTFÖY REBALANCING
 # ==========================================
 elif page == "📈 Varlık & Portföy Rebalancing":
     st.header("📈 Canlı Varlık Sepeti ve Akıllı Dengeleme")
-    st.markdown("Toplam varlığınızı dengede tutmak Mark Tilbury'nin '%25 Büyüme ve %15 Güvenlik' felsefesinin kalbidir.")
     
     st.sidebar.subheader("🎯 İdeal Portföy Hedefiniz (%)")
-    t_nakit = st.sidebar.slider("Hedef Nakit % (Güvenlik)", 0, 100, 15)
-    t_hisse = st.sidebar.slider("Hedef Hisse % (Büyüme)", 0, 100, 45)
-    t_kripto = st.sidebar.slider("Hedef Kripto % (Büyüme)", 0, 100, 15)
-    t_altin = st.sidebar.slider("Hedef Altın % (Büyüme)", 0, 100, 25)
+    t_nakit = st.sidebar.slider("Hedef Nakit %", 0, 100, 15)
+    t_hisse = st.sidebar.slider("Hedef Hisse %", 0, 100, 45)
+    t_kripto = st.sidebar.slider("Hedef Kripto %", 0, 100, 15)
+    t_altin = st.sidebar.slider("Hedef Altın %", 0, 100, 25)
     
     with st.form("varlik_formu", clear_on_submit=True):
         col1, col2 = st.columns(2)
@@ -357,95 +302,126 @@ elif page == "📈 Varlık & Portföy Rebalancing":
             elif fark_tl < 0: st.warning(f"✂️ **{row['Varlık Tipi']}** fazla. **{abs(fark_tl):,.0f} TL** kâr satışı düşünülebilir.")
 
 # ==========================================
-# SAYFA 5: VAMPİR HARCAMA (LATTE FAKTÖRÜ)
+# SAYFA 4: VAMPİR HARCAMA (LATTE FAKTÖRÜ)
 # ==========================================
 elif page == "☕ Vampir Harcama (Latte Faktörü)":
     st.header("🧛‍♂️ Vampir Harcama Yüzleşmesi (Latte Faktörü)")
-    st.markdown("Kuralın '%10 Ödül' kısmını aşan ve büyümenizi engelleyen küçük kaçamakların uzun vadedeki yıkımını görün.")
+    st.markdown("Küçük zevklerin aslında gelecekteki milyonlarını nasıl çaldığını kendi gözlerinle gör.")
     
     col1, col2, col3 = st.columns(3)
     with col1: gunluk_kahve = st.number_input("☕ Günlük Dışarıdan Kahve/Atıştırmalık (TL):", 0, 500, 150)
     with col2: haftalik_yemek = st.number_input("🍔 Haftalık Dışarıdan Yemek Siparişi (TL):", 0, 5000, 1200)
     with col3: aylik_abonelik = st.number_input("📺 Aylık Kullanılmayan Abonelikler (TL):", 0, 2000, 300)
     
-    roi_rate = st.slider("Eğer bu parayı harcamayıp (%25 Büyüme fonuna ekleseydin) yıllık getirin ne olurdu?", 10, 150, 65)
+    roi_rate = st.slider("Eğer bu parayı harcamayıp yatırsaydın yıllık ortalama getirin ne olurdu? (%)", 10, 150, 65)
     
     aylik_vampir = (gunluk_kahve * 30) + (haftalik_yemek * 4) + aylik_abonelik
     
     if aylik_vampir > 0:
         st.error(f"🩸 **Kan Kaybı Tespit Edildi:** Aylık tam **{aylik_vampir:,.0f} TL** çöpe gidiyor.")
+        
         vampir_data = []
         birikim = 0
         m_roi = (1 + roi_rate / 100) ** (1/12) - 1
         
-        for ay in range(1, 361):
+        for ay in range(1, 361): # 30 yıl
             birikim = (birikim + aylik_vampir) * (1 + m_roi)
-            if ay % 12 == 0: vampir_data.append({"Yıl": ay//12, "Kayıp Servet (TL)": birikim})
+            if ay % 12 == 0:
+                vampir_data.append({"Yıl": ay//12, "Kayıp Servet (TL)": birikim})
                 
         df_vampir = pd.DataFrame(vampir_data)
+        
         st.plotly_chart(px.area(df_vampir, x="Yıl", y="Kayıp Servet (TL)", title=f"%{roi_rate} Getiri İle 30 Yıllık Kayıp Servet Dağı", color_discrete_sequence=["#FF4B4B"]), use_container_width=True)
+        
+        st.subheader("🎙️ Mark Tilbury Diyor Ki:")
+        kayip_10_yil = df_vampir.iloc[9]['Kayıp Servet (TL)']
+        st.markdown(f"> *O anlık zevkler için harcadığın para yüzünden sadece 10 yıl sonra cebinde olması gereken **{kayip_10_yil:,.0f} TL**'den vazgeçiyorsun. Sen zenginleri daha da zengin etmek için çalışan bir tüketicisin. Uyan!*")
 
 # ==========================================
-# SAYFA 6: KIYAMET SENARYOSU (STRES TESTİ)
+# SAYFA 5: KIYAMET SENARYOSU (STRES TESTİ)
 # ==========================================
-elif page == "🛡️ Kıyamet Senaryosu (%15 Güvenlik)":
+elif page == "🛡️ Kıyamet Senaryosu (Stres Testi)":
     st.header("🛡️ Finansal Kriz ve Hayatta Kalma Stres Testi")
-    st.markdown("25/50/15/10 kuralındaki **%15 Güvenlik Fonu**'nun asıl amacı sizi en az 6 ay hayatta tutacak bir Acil Durum Fonu inşa etmektir.")
+    st.markdown("Yarın işten kovulursan veya sıfır gelirin kalırsa, elindeki nakitle standartlarını bozmadan ne kadar yaşayabilirsin?")
     
     if st.session_state.income_expense_history.empty or st.session_state.investment_history.empty:
         st.warning("Bu testi yapabilmek için lütfen önce Gelir/Gider ve Varlık verilerinizi girin.")
     else:
-        last_mali = st.session_state.income_expense_history.iloc[-1]
+        last_expense = float(st.session_state.income_expense_history.iloc[-1]["Toplam Gider"])
         last_cash = float(st.session_state.investment_history.iloc[-1]["Nakit Birikim"])
         
-        zorunlu_giderler = float(last_mali["Kira/Mutfak"]) + float(last_mali["Faturalar"]) + float(last_mali["Ulaşım/Araç"]) + float(last_mali["Kredi/Borç"])
-        
-        st.write(f"**Aylık ZORUNLU Gideriniz (%50 İhtiyaçlar + Borçlar):** {zorunlu_giderler:,.0f} TL")
+        st.write(f"**Aylık Sabit Gideriniz:** {last_expense:,.0f} TL")
         st.write(f"**Acil Durum Nakitiniz (Banka Mevduatı):** {last_cash:,.0f} TL")
         
-        hayatta_kalma_ayi = last_cash / zorunlu_giderler if zorunlu_giderler > 0 else 0
+        if last_expense > 0:
+            hayatta_kalma_ayi = last_cash / last_expense
+        else:
+            hayatta_kalma_ayi = 0
             
         fig = go.Figure(go.Indicator(
-            mode = "gauge+number", value = hayatta_kalma_ayi,
-            domain = {'x': [0, 1], 'y': [0, 1]}, title = {'text': "Hayatta Kalma Süresi (Ay)"},
+            mode = "gauge+number",
+            value = hayatta_kalma_ayi,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "Hayatta Kalma Süresi (Ay)"},
             gauge = {
-                'axis': {'range': [None, 12]}, 'bar': {'color': "black"},
-                'steps' : [{'range': [0, 3], 'color': "#FF4B4B"}, {'range': [3, 6], 'color': "#FFA500"}, {'range': [6, 12], 'color': "#00CC96"}],
+                'axis': {'range': [None, 12]},
+                'bar': {'color': "black"},
+                'steps' : [
+                    {'range': [0, 3], 'color': "#FF4B4B"}, # Kırmızı
+                    {'range': [3, 6], 'color': "#FFA500"}, # Turuncu
+                    {'range': [6, 12], 'color': "#00CC96"}], # Yeşil
                 'threshold' : {'line': {'color': "white", 'width': 4}, 'thickness': 0.75, 'value': 6}
             }
         ))
         st.plotly_chart(fig, use_container_width=True)
         
-        if hayatta_kalma_ayi < 6: st.warning("⚠️ Mark Tilbury 6 aylık güvenliği sağlayana kadar gelirinizin %15'ini buraya aktarmanızı söyler.")
-        else: st.success("🛡️ Mükemmel! %15'lik kural görevini tamamlamış. 6 ayı aştığınız için artık nakite değil, %25'lik Büyüme fonuna daha fazla ağırlık verebilirsiniz.")
+        if hayatta_kalma_ayi < 3: st.error("🚨 Kırmızı Alarm! Acil durum fonun çok yetersiz. İlk krizde borç batağına düşebilirsin. Nakit rezervini artır!")
+        elif hayatta_kalma_ayi < 6: st.warning("⚠️ Fena değil ama risk altındasın. Mark Tilbury minimum 6 aylık bir acil durum fonu önerir.")
+        else: st.success(f"🛡️ Mükemmel! Tam {hayatta_kalma_ayi:.1f} ay boyunca hiç çalışmadan mevcut hayatını yaşayabilirsin. Krizlere karşın bir kurşungeçirmez yeleğin var.")
 
 # ==========================================
-# SAYFA 7: PASİF GELİR KAR TOPU
+# SAYFA 6: PASİF GELİR KAR TOPU
 # ==========================================
 elif page == "❄️ Pasif Gelir Kar Topu":
-    st.header("❄️ Pasif Gelir Kar Topu")
-    if st.session_state.investment_history.empty: st.warning("Veri yok.")
+    st.header("❄️ Pasif Gelir Kar Topu (Param Bana Ne Alırdı?)")
+    st.markdown("Mevcut yatırımlarınızın size *şu an* aylık olarak hangi faturalarınızı bedavaya getirebileceğini görün.")
+    
+    if st.session_state.investment_history.empty:
+        st.warning("Veri yok. Lütfen varlıklarınızı girin.")
     else:
         tot_port = float(st.session_state.investment_history.iloc[-1]["Toplam Varlık"])
-        safe_withdrawal_rate = st.slider("Yıllık Pasif Getiri Beklentiniz (%)", 1, 20, 10)
+        safe_withdrawal_rate = st.slider("Yıllık Pasif Getiri / Temettü Beklentiniz (%)", 1, 20, 10)
+        
         aylik_pasif = (tot_port * (safe_withdrawal_rate / 100)) / 12
         st.success(f"💸 **Mevcut Portföy Büyüklüğünüz:** {tot_port:,.0f} TL | **Tahmini Aylık Pasif Geliriniz:** {aylik_pasif:,.0f} TL")
         st.divider()
-        hedef_kalemler = {"📱 Abonelikler": 400, "☎️ Telefon Faturası": 600, "💪 Spor Salonu": 1500, "⚡ Elektrik/Su": 3000, "🛒 Market/Mutfak": 15000, "🏠 Ev Kirası": 30000}
+        
+        hedef_kalemler = {
+            "📱 Dijital Abonelikler (Netflix, Spotify vs.)": 400,
+            "☎️ Telefon Faturası": 600,
+            "💪 Spor Salonu Üyeliği": 1500,
+            "⚡ Elektrik, Su ve Doğalgaz": 3000,
+            "🛒 Market ve Mutfak": 15000,
+            "🏠 Ev Kirası": 30000
+        }
+        
         for isim, tutar in hedef_kalemler.items():
             st.write(f"**{isim}** (Aylık Tahmini {tutar} TL)")
             if aylik_pasif >= tutar:
                 st.progress(100)
-                st.caption("✅ BEDAVA! (Yatırımlarınız bu gideri ödüyor)")
+                st.caption("✅ BEDAVA! (Yatırımlarınız bu gideri sonsuza kadar ödüyor)")
             else:
-                st.progress(int((aylik_pasif / tutar) * 100))
-                st.caption(f"⏳ Yalnızca %{int((aylik_pasif / tutar) * 100)}'si karşılanıyor.")
+                yuzde = int((aylik_pasif / tutar) * 100)
+                st.progress(yuzde)
+                st.caption(f"⏳ Yalnızca %{yuzde}'si karşılanıyor. Daha fazla yatırıma ihtiyaç var.")
 
 # ==========================================
-# SAYFA 8: MAAŞLI ÇALIŞMADAN KURTULMA MOTORU
+# SAYFA 7: MAAŞLI ÇALIŞMADAN KURTULMA MOTORU
 # ==========================================
 elif page == "🔮 Maaşlı Çalışmadan Kurtulma Motoru":
     st.header("🔮 9-5 İstifa Sayacı & Finansal Özgürlük Projeksiyonu")
+    
+    st.subheader("⚙️ Simülasyon Parametreleri")
     sc1, sc2, sc3 = st.columns(3)
     with sc1: inf_rate = st.slider("Yıllık Enflasyon Tahmini (%):", 0, 100, 35)
     with sc2: sal_rate = st.slider("Yıllık Maaş Artış Oranınız (%):", 0, 100, 45)
@@ -478,7 +454,13 @@ elif page == "🔮 Maaşlı Çalışmadan Kurtulma Motoru":
         sim_data.append({"Ay": m, "Yıl": round(m/12, 1), "Varlık": current_portfolio, "Pasif Gelir": passive_gen, "Hedef": target_p})
         
     df_sim = pd.DataFrame(sim_data)
+    
     st.divider()
-    if freedom_m != -1: st.success(f"🥳 **Hesaplama Tamamlandı!** Tam **{freedom_m // 12} Yıl {freedom_m % 12} Ay** sonra maaşlı çalışmaktan kalıcı olarak kurtuluyorsunuz!")
-    else: st.error("⚠️ Mevcut oranlara göre 30 yıl içinde istifa etmek mümkün görünmüyor.")
+    st.subheader("🏆 İstifa Projeksiyon Sonucu")
+    if freedom_m != -1:
+        st.balloons()
+        st.success(f"🥳 **Hesaplama Tamamlandı!** Tam **{freedom_m // 12} Yıl {freedom_m % 12} Ay** sonra maaşlı çalışmaktan kalıcı olarak kurtuluyorsunuz!")
+    else:
+        st.error("⚠️ Mevcut oranlara göre 30 yıl içinde istifa etmek mümkün görünmüyor. Tasarruf oranını artırmalısınız.")
+        
     st.plotly_chart(px.line(df_sim, x="Yıl", y=["Varlık", "Pasif Gelir", "Hedef"], title="30 Yıllık Finansal Bağımsızlık Matrisi"), use_container_width=True)
